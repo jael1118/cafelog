@@ -1,40 +1,122 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, FlatList, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, FlatList, SafeAreaView, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, usePathname } from 'expo-router';
+import { useRouter, usePathname, useFocusEffect } from 'expo-router'; 
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 
-// --- 配色與圖示順序 ---
 const colors = {
   primary: '#8D6E63', secondary: '#F5EEDC', background: '#FFFFFF',
   text: '#5D4037', accent: '#D7CCC8', white: '#FFFFFF',
 };
 
-const statsData = { total: 42, thisYear: 4, thisMonth: 4 };
-const monthName = "2023年 10月";
 const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"];
-const calendarDates = [
-   1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-  15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
-  29, 30, 31,  0,  0,  0,  0
-];
-const datesWithLogs = [5, 12, 14, 18];
+const ITEM_HEIGHT = 46;
 
 export default function HomeScreen() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const renderDateCell = ({ item: day, index }) => {
-    const isToday = day === 18;
-    const hasLog = datesWithLogs.includes(day);
+  const [currentDate, setCurrentDate] = useState(new Date()); 
+  const [calendarDates, setCalendarDates] = useState([]);
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  
+  const [logs, setLogs] = useState([]);
+  
+  const yearScrollRef = useRef(null);
+  const monthScrollRef = useRef(null);
 
+  const realToday = new Date();
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchLogs = async () => {
+        try {
+          const storedLogs = await AsyncStorage.getItem('cafe_logs');
+          if (storedLogs) {
+            setLogs(JSON.parse(storedLogs)); 
+          }
+        } catch (error) {
+          console.error("讀取紀錄失敗", error);
+        }
+      };
+      fetchLogs();
+    }, [])
+  );
+
+  // === 📊 修正：統計資料改為跟隨「目前查看的 currentDate」連動 ===
+  const stats = {
+    total: logs.length, // 總數不變，永遠是所有紀錄
+    thisYear: logs.filter(log => {
+      if (!log.date) return false;
+      // 改為比對「目前月曆顯示的年份」
+      return log.date.startsWith(currentDate.getFullYear().toString());
+    }).length,
+    thisMonth: logs.filter(log => {
+      if (!log.date) return false;
+      // 改為比對「目前月曆顯示的年-月」
+      const prefix = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+      return log.date.startsWith(prefix);
+    }).length,
+  };
+
+  const currentYear = realToday.getFullYear();
+  const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+  const months = Array.from({ length: 12 }, (_, i) => i);
+
+  useEffect(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDayOfWeek = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const datesArray = [];
+    for (let i = 0; i < firstDayOfWeek; i++) datesArray.push(0);
+    for (let i = 1; i <= daysInMonth; i++) datesArray.push(i);
+    while (datesArray.length % 7 !== 0) datesArray.push(0);
+
+    setCalendarDates(datesArray);
+  }, [currentDate]);
+
+  useEffect(() => {
+    if (isPickerVisible) {
+      setTimeout(() => {
+        const yIndex = years.indexOf(currentDate.getFullYear());
+        const mIndex = currentDate.getMonth();
+        yearScrollRef.current?.scrollTo({ y: yIndex * ITEM_HEIGHT, animated: false });
+        monthScrollRef.current?.scrollTo({ y: mIndex * ITEM_HEIGHT, animated: false });
+      }, 50); 
+    }
+  }, [isPickerVisible]);
+
+  const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+
+  const handleYearSelect = (y, index) => {
+    setCurrentDate(prev => new Date(y, prev.getMonth(), 1));
+    yearScrollRef.current?.scrollTo({ y: index * ITEM_HEIGHT, animated: true });
+  };
+
+  const handleMonthSelect = (m, index) => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), m, 1));
+    monthScrollRef.current?.scrollTo({ y: index * ITEM_HEIGHT, animated: true });
+  };
+
+  const renderDateCell = ({ item: day, index }) => {
     if (day === 0) return <View style={styles.calendarCellEmpty} key={`empty-${index}`} />;
+
+    const cellDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const hasLog = logs.some(log => log.date === cellDateStr);
+    
+    const isToday = realToday.getFullYear() === currentDate.getFullYear() && 
+                    realToday.getMonth() === currentDate.getMonth() && 
+                    realToday.getDate() === day;
 
     return (
       <TouchableOpacity 
         style={styles.calendarCellContainer} 
         key={`day-${index}`}
-        activeOpacity={hasLog ? 0.5 : 1}
-        onPress={() => { if (hasLog) router.push('/log'); }}
+        // 🌟 保留你修改過的跳轉路徑 '/log'
+        onPress={() => { if (hasLog) router.push({ pathname: '/log', params: { date: cellDateStr } }); }}
       >
         <View style={[styles.calendarDayBackground, isToday && styles.todayBackground]}>
           <Text style={[styles.calendarDayText, isToday && styles.todayText, hasLog && styles.logDayText]}>{day}</Text>
@@ -53,12 +135,15 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.logoArea}>
           <Ionicons name="heart-outline" size={24} color={colors.text} style={styles.logoIcon} />
-          <Text style={styles.logoText}>啡曆. Cafélog</Text>
+          <Text style={styles.logoText}>月曆</Text>
         </View>
+        
         <View style={styles.monthHeader}>
-          <TouchableOpacity><Ionicons name="chevron-back" size={18} color={colors.text} /></TouchableOpacity>
-          <View style={styles.monthBadge}><Text style={styles.monthLabel}>{monthName}</Text></View>
-          <TouchableOpacity><Ionicons name="chevron-forward" size={18} color={colors.text} /></TouchableOpacity>
+          <TouchableOpacity onPress={handlePrevMonth}><Ionicons name="chevron-back" size={18} color={colors.text} /></TouchableOpacity>
+          <TouchableOpacity style={styles.monthBadge} onPress={() => setIsPickerVisible(true)}>
+            <Text style={styles.monthLabel}>{`${currentDate.getFullYear()}年 ${currentDate.getMonth() + 1}月`}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleNextMonth}><Ionicons name="chevron-forward" size={18} color={colors.text} /></TouchableOpacity>
         </View>
       </View>
 
@@ -79,41 +164,67 @@ export default function HomeScreen() {
         <View style={styles.statsSection}>
           <Text style={styles.sectionTitle}>統計資料</Text>
           <View style={styles.statsRow}>
-            <StatsCard label="累積咖啡數" value={statsData.total} unit="咖" />
-            <StatsCard label="這年" value={statsData.thisYear} unit="咖" />
-            <StatsCard label="這月" value={statsData.thisMonth} unit="咖" />
+            {/* 🌟 統計標題也幫你動態更新，看起來更直覺！ */}
+            <StatsCard label="累積咖啡數" value={stats.total} unit="咖" />
+            <StatsCard label={`${currentDate.getFullYear()}年`} value={stats.thisYear} unit="咖" />
+            <StatsCard label={`${currentDate.getMonth() + 1}月`} value={stats.thisMonth} unit="咖" />
           </View>
         </View>
       </ScrollView>
 
-      {/* 右下角新增紀錄的 FAB (影片內部的按鈕) */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => console.log('準備新增紀錄！')}>
-        <Ionicons name="add" size={32} color={colors.white} />
-      </TouchableOpacity>
+      <Modal visible={isPickerVisible} transparent={true} animationType="fade">
+        <View style={styles.modalContainer}>
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsPickerVisible(false)} />
+          <View style={styles.pickerCard}>
+            <View style={styles.pickerColumn}>
+              <View style={styles.selectionHighlight} pointerEvents="none" />
+              <ScrollView ref={yearScrollRef} showsVerticalScrollIndicator={false} snapToInterval={ITEM_HEIGHT} decelerationRate="fast" onMomentumScrollEnd={(e) => {
+                const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+                if (years[idx]) setCurrentDate(prev => new Date(years[idx], prev.getMonth(), 1));
+              }} contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}>
+                {years.map((y, index) => (
+                  <TouchableOpacity key={y} style={styles.pickerItem} onPress={() => handleYearSelect(y, index)}>
+                    <Text style={[styles.pickerItemText, y === currentDate.getFullYear() && styles.pickerItemTextSelected]}>{y}年</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+            <View style={styles.pickerColumn}>
+              <View style={styles.selectionHighlight} pointerEvents="none" />
+              <ScrollView ref={monthScrollRef} showsVerticalScrollIndicator={false} snapToInterval={ITEM_HEIGHT} decelerationRate="fast" onMomentumScrollEnd={(e) => {
+                const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+                if (months[idx] !== undefined) setCurrentDate(prev => new Date(prev.getFullYear(), months[idx], 1));
+              }} contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}>
+                {months.map((m, index) => (
+                  <TouchableOpacity key={m} style={styles.pickerItem} onPress={() => handleMonthSelect(m, index)}>
+                    <Text style={[styles.pickerItemText, m === currentDate.getMonth() && styles.pickerItemTextSelected]}>{m + 1}月</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
-      {/* --- 手工貼上的底部導覽列 (四個頁面同步更新) --- */}
-      {/* --- 手工貼上的底部導覽列 --- */}
       <View style={styles.tabBar}>
-        {/* 1. 首頁 */}
         <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/')}>
           <Ionicons name={pathname === '/' ? "home" : "home-outline"} size={26} color={pathname === '/' ? colors.primary : colors.accent} />
         </TouchableOpacity>
-        
-        {/* 2. 地圖 */}
         <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/map')}>
           <Ionicons name={pathname === '/map' ? "map" : "map-outline"} size={26} color={pathname === '/map' ? colors.primary : colors.accent} />
         </TouchableOpacity>
-
-        {/* 3. 紀錄 */}
         <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/logbook')}>
           <Ionicons name={pathname === '/logbook' ? "book" : "book-outline"} size={26} color={pathname === '/logbook' ? colors.primary : colors.accent} />
         </TouchableOpacity>
-
-        {/* 4. 設定 */}
         <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/setting')}>
-          <Ionicons name={pathname === '/setting' ? "person" : "person-outline"} size={26} color={pathname === '/settings' ? colors.primary : colors.accent} />
+          <Ionicons name={pathname === '/setting' ? "person" : "person-outline"} size={26} color={pathname === '/setting' ? colors.primary : colors.accent} />
         </TouchableOpacity>
       </View>
+      
+      {/* 🌟 保留你修改過的跳轉路徑 '/addlog' */}
+      <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push('/addlog')}>
+        <Ionicons name="add" size={32} color={colors.white} />
+      </TouchableOpacity>
 
     </SafeAreaView>
   );
@@ -123,8 +234,8 @@ const StatsCard = ({ label, value, unit }) => (
   <View style={styles.statsCard}>
     <Text style={styles.statsLabel}>{label}</Text>
     <View style={styles.statsValueContainer}>
-        <Text style={styles.statsValue}>{value}</Text>
-        <Text style={styles.statsUnit}>{unit}</Text>
+      <Text style={styles.statsValue}>{value}</Text>
+      <Text style={styles.statsUnit}>{unit}</Text>
     </View>
   </View>
 );
@@ -159,8 +270,14 @@ const styles = StyleSheet.create({
   statsValue: { fontSize: 28, fontWeight: 'bold', color: colors.text },
   statsUnit: { fontSize: 12, color: colors.text, marginLeft: 2 },
   fab: { position: 'absolute', bottom: 100, right: 20, backgroundColor: colors.text, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 5 },
-  
-  // 導覽列樣式 (更新為更精緻的大地色系)
-  tabBar: { flexDirection: 'row', height: 80, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.secondary, paddingBottom: 20, elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 5 },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center' }
+  tabBar: { flexDirection: 'row', height: 80, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.secondary, paddingBottom: 20, elevation: 10 },
+  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  modalContainer: { flex: 1, alignItems: 'center', paddingTop: 110 },
+  modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.05)' },
+  pickerCard: { flexDirection: 'row', backgroundColor: '#D7CCC8', borderRadius: 25, width: '85%', height: ITEM_HEIGHT * 3, paddingHorizontal: 10, elevation: 8, overflow: 'hidden' },
+  pickerColumn: { flex: 1, height: '100%', position: 'relative' },
+  selectionHighlight: { position: 'absolute', top: ITEM_HEIGHT, left: 10, right: 10, height: ITEM_HEIGHT, backgroundColor: '#F5EEDC', borderRadius: 20 },
+  pickerItem: { height: ITEM_HEIGHT, width: '100%', alignItems: 'center', justifyContent: 'center' },
+  pickerItemText: { fontSize: 20, color: '#A1887F', fontWeight: 'bold' },
+  pickerItemTextSelected: { color: '#5D4037' }
 });
