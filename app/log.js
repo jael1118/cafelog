@@ -4,22 +4,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 依照你設計圖的柔和配色
+// 🌟 換上統一的紫羅蘭與粉色系治癒配色
 const colors = {
-  primary: '#8D6E63', 
-  secondary: '#FCECDA', // 編輯按鈕的淺橘色
-  background: '#FFFFFF', 
-  text: '#4A3728',      // 標題深棕色
-  grayText: '#9E9E9E',  // 次要資訊灰色
-  tagBg: '#F5EFE9',     // 標籤淺底色
-  tagText: '#7A6255',   // 標籤文字色
-  heart: '#F27B7B',     // 愛心粉紅色
-  heartEmpty: '#E0E0E0' // 愛心空底色
+  primary: '#FCA5F1',         // 粉紅色 (強調色)
+  secondary: '#EBE5F5',       // 淺紫 (編輯按鈕、標籤底色)
+  background: '#F8F8FC',      // 極淺灰紫底色
+  text: '#4A4A4A',            // 深灰標題
+  grayText: '#888888',        // 次要灰字
+  tagBg: '#EBE5F5',           // 標籤底色
+  tagText: '#9B7ED9',         // 標籤文字 (深紫)
+  heart: '#FCA5F1',           // 愛心粉紅
+  heartEmpty: '#E0E0E0',      // 愛心空底色
+  white: '#FFFFFF'
 };
 
 export default function LogDetailScreen() {
   const router = useRouter();
-  // 🌟 接收從首頁傳過來的「日期」參數 (例如: "2026-04-07")
   const { date } = useLocalSearchParams(); 
   
   const [dayLogs, setDayLogs] = useState([]);
@@ -30,7 +30,6 @@ export default function LogDetailScreen() {
         const storedLogs = await AsyncStorage.getItem('cafe_logs');
         if (storedLogs) {
           const allLogs = JSON.parse(storedLogs);
-          // 🔍 從保險箱撈出資料後，只留下「日期符合這一天」的紀錄
           const filteredLogs = allLogs.filter(log => log.date === date);
           setDayLogs(filteredLogs);
         }
@@ -43,7 +42,6 @@ export default function LogDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 頂部導覽 */}
       <View style={styles.navBar}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -54,29 +52,23 @@ export default function LogDetailScreen() {
         {dayLogs.length === 0 ? (
           <Text style={styles.emptyText}>這天還沒有喝咖啡的紀錄喔 ☕️</Text>
         ) : (
-          // 萬一這天喝了兩家以上的咖啡，我們用 map 把每一筆都印出來
           dayLogs.map((log) => (
             <View key={log.id} style={styles.logCard}>
               
-              {/* === 1. 標題與時間 === */}
               <View style={styles.headerRow}>
                 <Text style={styles.titleText}>{log.title}</Text>
                 <Text style={styles.timeText}>{log.displayTime}</Text>
               </View>
 
-              {/* === 2. 縮圖、地點、評分、編輯按鈕 === */}
               <View style={styles.infoRow}>
-                
-                {/* 縮圖 */}
                 <View style={styles.thumbnailBox}>
                   {log.imageUrl ? (
                     <Image source={{ uri: log.imageUrl }} style={styles.thumbnailImage} />
                   ) : (
-                    <Ionicons name="cafe" size={30} color="#D7CCC8" />
+                    <Ionicons name="cafe" size={30} color={colors.secondary} />
                   )}
                 </View>
 
-                {/* 地點與愛心 */}
                 <View style={styles.metaColumn}>
                   <View style={styles.locationRow}>
                     <Ionicons name="location-sharp" size={14} color={colors.grayText} />
@@ -97,16 +89,20 @@ export default function LogDetailScreen() {
                   </View>
                 </View>
 
-                {/* 編輯按鈕 (目前先做 UI，你可以之後擴充修改功能) */}
-                <TouchableOpacity style={styles.editButton}>
-                  <Ionicons name="pencil" size={14} color="#C99B78" />
+                {/* 🌟 編輯按鈕：點擊時把這筆 log 變成字串，一起帶去新增頁面！ */}
+                <TouchableOpacity 
+                  style={styles.editButton}
+                  onPress={() => router.push({ 
+                    pathname: '/addlog', // 注意：請確認你的檔案名稱是 addlog.js 還是 add-log.js
+                    params: { editLogData: JSON.stringify(log) } 
+                  })}
+                >
+                  <Ionicons name="pencil" size={14} color={colors.tagText} />
                 </TouchableOpacity>
               </View>
 
-              {/* === 3. 關鍵字標籤 === */}
               {log.tags ? (
                 <View style={styles.tagsContainer}>
-                  {/* 將使用者輸入的文字用空白切開，變成一顆顆的標籤 */}
                   {log.tags.split(' ').filter(t => t.trim() !== '').map((tag, index) => (
                     <View key={index} style={styles.tagBadge}>
                       <Text style={styles.tagText}>{tag}</Text>
@@ -115,15 +111,13 @@ export default function LogDetailScreen() {
                 </View>
               ) : null}
 
-              {/* === 4. 筆記內文 === */}
               <Text style={styles.noteText}>{log.note}</Text>
 
-              {/* 依照你的設計圖，下方有一個大塊的灰底圖片佔位區 */}
-              {log.imageUrl && (
-                 <Image source={{ uri: log.imageUrl }} style={styles.largeImage} />
+              {/* 🌟 修正：讀取你在 addlog 存下的「大照片」 (largeImageUrl) */}
+              {log.largeImageUrl && (
+                 <Image source={{ uri: log.largeImageUrl }} style={styles.largeImage} />
               )}
 
-              {/* 分隔線 (如果一天有多筆紀錄) */}
               <View style={styles.divider} />
             </View>
           ))
@@ -142,14 +136,12 @@ const styles = StyleSheet.create({
   
   logCard: { marginBottom: 30 },
   
-  // 1. 標題與時間
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 },
   titleText: { fontSize: 22, fontWeight: '900', color: colors.text, flex: 1 },
   timeText: { fontSize: 11, color: colors.grayText, marginBottom: 4 },
 
-  // 2. 主要資訊區
   infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  thumbnailBox: { width: 65, height: 65, backgroundColor: '#F0F0F0', borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 15, overflow: 'hidden' },
+  thumbnailBox: { width: 65, height: 65, backgroundColor: colors.white, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 15, overflow: 'hidden', borderWidth: 1, borderColor: '#F0F0F0' },
   thumbnailImage: { width: '100%', height: '100%' },
   
   metaColumn: { flex: 1, justifyContent: 'center' },
@@ -158,18 +150,16 @@ const styles = StyleSheet.create({
   ratingRow: { flexDirection: 'row', alignItems: 'center' },
   ratingNumber: { fontSize: 12, color: colors.grayText, marginLeft: 6, fontWeight: 'bold' },
   
+  // 編輯按鈕換成淺紫色底、深紫色筆
   editButton: { backgroundColor: colors.secondary, width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', alignSelf: 'flex-start' },
 
-  // 3. 標籤區
   tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 15 },
   tagBadge: { backgroundColor: colors.tagBg, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 15, marginRight: 8, marginBottom: 8 },
   tagText: { color: colors.tagText, fontSize: 12, fontWeight: 'bold' },
 
-  // 4. 筆記區
   noteText: { fontSize: 14, color: '#666', lineHeight: 22, marginBottom: 20 },
   
-  // 大圖區
-  largeImage: { width: '100%', height: 200, backgroundColor: '#E0E0E0', borderRadius: 8, marginTop: 10 },
+  largeImage: { width: '100%', height: 200, backgroundColor: '#E0E0E0', borderRadius: 15, marginTop: 10 },
   
-  divider: { height: 1, backgroundColor: '#F0F0F0', marginVertical: 25 }
+  divider: { height: 1, backgroundColor: '#EBE5F5', marginVertical: 25 }
 });

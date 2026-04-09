@@ -5,9 +5,37 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import * as Location from 'expo-location';
 
+// 🌟 全面換成與其他頁面一致的紫色/治癒系風格！
 const colors = {
-  primary: '#8D6E63', secondary: '#F5EEDC', background: '#FFFFFF', text: '#5D4037', white: '#FFFFFF', accent: '#D7CCC8'
+  primary: '#9B7ED9',         // 主要深紫 (標記、主要按鈕)
+  secondary: '#EBE5F5',       // 淺紫 (次要按鈕、背景)
+  background: '#F8F8FC',      // 頁面極淺灰紫底色
+  text: '#4A4A4A',            // 標題深灰色
+  grayText: '#888888',        // 次要灰色文字
+  white: '#FFFFFF',
+  accentPink: '#FCA5F1',      // 裝飾粉紅
+  heart: '#FFB6C1',           // 愛心粉紅
 };
+
+// 🗺️ 客製化地圖樣式 (讓地圖變成你截圖中的復古淺綠色調)
+const customMapStyle = [
+  { "elementType": "geometry", "stylers": [{ "color": "#e0e3c8" }] }, // 復古淺綠底色
+  { "elementType": "labels.text.fill", "stylers": [{ "color": "#523735" }] },
+  { "elementType": "labels.text.stroke", "stylers": [{ "color": "#f5f1e6" }] },
+  { "featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{ "color": "#d59563" }] },
+  { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [{ "color": "#d59563" }] },
+  { "featureType": "poi.park", "elementType": "geometry", "stylers": [{ "color": "#c6ccae" }] },
+  { "featureType": "poi.park", "elementType": "labels.text.fill", "stylers": [{ "color": "#6b9a76" }] },
+  { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#f0e6c5" }] },
+  { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#e1d4b1" }] },
+  { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#9ca5b3" }] },
+  { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#f5dfa2" }] },
+  { "featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [{ "color": "#e1c880" }] },
+  { "featureType": "road.highway", "elementType": "labels.text.fill", "stylers": [{ "color": "#f3d19c" }] },
+  { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#b9d3c2" }] },
+  { "featureType": "water", "elementType": "labels.text.fill", "stylers": [{ "color": "#92998d" }] },
+  { "featureType": "water", "elementType": "labels.text.stroke", "stylers": [{ "color": "#17263c" }] }
+];
 
 const placeholderImages = [
   'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=300&auto=format&fit=crop',
@@ -145,9 +173,6 @@ export default function MapScreen() {
     }
   };
 
-  // ==========================================
-  // 🗺️ 修改：打開 Google Maps，直接搜尋「店名」
-  // ==========================================
   const openGoogleMaps = (cafe) => {
     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name)}`;
     Linking.openURL(url).catch((err) => {
@@ -166,6 +191,7 @@ export default function MapScreen() {
             style={styles.map}
             initialRegion={userRegion}
             showsUserLocation={true}
+            customMapStyle={customMapStyle} // 🌟 套用復古淺綠色調濾鏡
             onPress={() => setSelectedCafe(null)}
             onRegionChangeComplete={(region) => {
               globalSavedRegion = region; 
@@ -185,6 +211,7 @@ export default function MapScreen() {
                   setSelectedCafe(cafe);
                 }}
               >
+                {/* 🌟 圖標改為紫色系 */}
                 <View style={[styles.customMarker, selectedCafe?.id === cafe.id && styles.activeMarker]}>
                   <Ionicons name="cafe" size={16} color={selectedCafe?.id === cafe.id ? colors.primary : colors.white} />
                 </View>
@@ -198,23 +225,26 @@ export default function MapScreen() {
           </View>
         )}
 
+        {/* 頂部搜尋框 */}
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={colors.text} style={styles.searchIcon} />
           <TextInput 
             style={styles.searchInput} 
-            placeholder="搜尋附近咖啡廳..." 
-            placeholderTextColor="#999" 
+            placeholder="點擊查詢店家..." 
+            placeholderTextColor={colors.grayText} 
             value={searchText}
             onChangeText={handleSearch}
           />
+          <Ionicons name="search" size={20} color={colors.text} />
         </View>
 
+        {/* 右側定位按鈕 */}
         {userRegion && (
           <TouchableOpacity style={styles.locateButton} onPress={goToCurrentLocation}>
             <Ionicons name="locate" size={22} color={colors.primary} />
           </TouchableOpacity>
         )}
 
+        {/* 重新搜尋按鈕 */}
         {showSearchHereBtn && currentMapRegion && !isLoading && (
           <TouchableOpacity 
             style={styles.searchHereBtn}
@@ -232,20 +262,18 @@ export default function MapScreen() {
           </View>
         )}
 
-        {selectedCafe ? (
+        {/* 🌟 選中店家後的卡片，依照圖片重新排版 */}
+        {selectedCafe && (
           <View style={styles.detailCard}>
             <View style={styles.cardHeader}>
               <Text style={styles.cafeName} numberOfLines={1}>{selectedCafe.name}</Text>
-              <TouchableOpacity onPress={() => setSelectedCafe(null)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.ratingRow}>
-              {[1, 2, 3, 4, 5].map((item, index) => (
-                <Ionicons key={index} name="star" size={14} color="#FF6B6B" style={{marginRight: 2}} />
-              ))}
-              <Text style={styles.ratingScore}>{selectedCafe.rating}</Text>
+              
+              <View style={styles.ratingRow}>
+                {[1, 2, 3, 4, 5].map((item, index) => (
+                  <Ionicons key={index} name="heart" size={12} color={colors.heart} style={{marginRight: 2}} />
+                ))}
+                <Text style={styles.ratingScore}>{selectedCafe.rating}</Text>
+              </View>
             </View>
 
             <View style={styles.cardMainContent}>
@@ -261,6 +289,7 @@ export default function MapScreen() {
                   <Text style={styles.detailText} numberOfLines={1}>{selectedCafe.businessHours}</Text>
                 </View>
 
+                {/* 標籤群 */}
                 <View style={styles.tagsContainer}>
                   {selectedCafe.tags.map((tag, index) => (
                     <View key={index} style={styles.tagBadge}>
@@ -268,99 +297,106 @@ export default function MapScreen() {
                     </View>
                   ))}
                 </View>
+                
+                {/* 導航與紀錄按鈕移到這裡 */}
+                <View style={styles.actionButtonRow}>
+                  <TouchableOpacity style={[styles.actionButton, styles.mapButton]} onPress={() => openGoogleMaps(selectedCafe)}>
+                    <Text style={styles.mapButtonText}>開啟導航</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.actionButton, styles.logButton]} onPress={() => router.push('/add-log')}>
+                    <Text style={styles.logButtonText}>寫紀錄</Text>
+                  </TouchableOpacity>
+                </View>
+
               </View>
             </View>
-            
-            <View style={styles.actionButtonRow}>
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.mapButton]} 
-                onPress={() => openGoogleMaps(selectedCafe)}
-              >
-                <Ionicons name="map" size={16} color={colors.primary} style={{marginRight: 4}} />
-                <Text style={styles.mapButtonText}>開啟地圖</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.logButton]} 
-                onPress={() => router.push('/log')}
-              >
-                <Ionicons name="pencil" size={16} color={colors.white} style={{marginRight: 4}} />
-                <Text style={styles.logButtonText}>寫紀錄</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.catContainer}>
-            <TouchableOpacity style={styles.speechBubble}>
-              <Text style={styles.speechText}>今天想去哪裡喝咖啡？</Text>
-            </TouchableOpacity>
-            <View style={styles.catAvatar}><Text style={{ fontSize: 30 }}>🐱</Text></View>
           </View>
         )}
 
-        <View style={styles.tabBar}>
-          <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/')}>
-            <Ionicons name={pathname === '/' ? "home" : "home-outline"} size={26} color={pathname === '/' ? colors.primary : colors.accent} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/map')}>
-            <Ionicons name={pathname === '/map' ? "map" : "map-outline"} size={26} color={pathname === '/map' ? colors.primary : colors.accent} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/logbook')}>
-            <Ionicons name={pathname === '/logbook' ? "book" : "book-outline"} size={26} color={pathname === '/logbook' ? colors.primary : colors.accent} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/setting')}>
-            <Ionicons name={pathname === '/setting' ? "person" : "person-outline"} size={26} color={pathname === '/settings' ? colors.primary : colors.accent} />
-          </TouchableOpacity>
+        {/* 🌟 依據設計圖製作的新版導覽列 */}
+        <View style={styles.tabBarWrapper}>
+          <View style={styles.tabBar}>
+            <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/')}>
+               <Ionicons name="calendar-outline" size={22} color={colors.grayText} />
+              <Text style={styles.tabText}>主頁</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/map')}>
+              {/* 目前在地圖頁，所以給它一個特別的紫色圓形背景 */}
+              <View style={styles.tabItemActiveBg}>
+                 <Ionicons name="map-outline" size={22} color={colors.primary} />
+              </View>
+              <Text style={[styles.tabText, styles.tabTextActive]}>地圖</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/logbook')}>
+              <Ionicons name="book-outline" size={22} color={colors.grayText} />
+               <Text style={styles.tabText}>紀錄</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/setting')}>
+              <Ionicons name="settings-outline" size={22} color={colors.grayText} />
+               <Text style={styles.tabText}>設定</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
       </View>
     </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: colors.background },
   map: { flex: 1 },
   loadingFull: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
-  searchContainer: { position: 'absolute', top: 60, left: 20, right: 20, flexDirection: 'row', backgroundColor: colors.white, borderRadius: 30, paddingHorizontal: 15, paddingVertical: 12, alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
-  searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 16, color: colors.text },
   
-  locateButton: { position: 'absolute', top: 130, right: 20, backgroundColor: colors.white, width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, zIndex: 10 },
-  searchHereBtn: { position: 'absolute', top: 130, alignSelf: 'center', flexDirection: 'row', backgroundColor: colors.white, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, zIndex: 10 },
+  // 搜尋框 (變更為圖片中的長條純白樣式)
+  searchContainer: { position: 'absolute', top: 60, left: 20, right: 20, flexDirection: 'row', backgroundColor: colors.white, borderRadius: 15, paddingHorizontal: 20, paddingVertical: 15, alignItems: 'center', justifyContent: 'space-between', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5 },
+  searchInput: { flex: 1, fontSize: 16, color: colors.text, marginRight: 10 },
+  
+  locateButton: { position: 'absolute', top: 140, right: 20, backgroundColor: colors.white, width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, zIndex: 10 },
+  searchHereBtn: { position: 'absolute', top: 140, alignSelf: 'center', flexDirection: 'row', backgroundColor: colors.white, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, zIndex: 10 },
   searchHereText: { color: colors.primary, fontWeight: 'bold', fontSize: 14 },
   
-  loadingFloating: { position: 'absolute', top: 130, alignSelf: 'center', flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, alignItems: 'center', elevation: 3 },
+  loadingFloating: { position: 'absolute', top: 140, alignSelf: 'center', flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, alignItems: 'center', elevation: 3 },
   loadingFloatingText: { color: colors.primary, marginLeft: 8, fontWeight: 'bold', fontSize: 12 },
 
+  // 地圖圖標 (換成紫色系)
   customMarker: { backgroundColor: colors.primary, padding: 6, borderRadius: 15, borderWidth: 2, borderColor: colors.white },
   activeMarker: { backgroundColor: colors.white, borderColor: colors.primary },
-  catContainer: { position: 'absolute', bottom: 100, left: 20, flexDirection: 'row', alignItems: 'flex-end' },
-  speechBubble: { backgroundColor: colors.white, paddingHorizontal: 15, paddingVertical: 10, borderRadius: 20, borderBottomLeftRadius: 0, marginBottom: 20, marginRight: -10, elevation: 3 },
-  speechText: { color: colors.text, fontWeight: 'bold' },
-  catAvatar: { width: 60, height: 60, backgroundColor: colors.text, borderRadius: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: colors.white },
   
-  detailCard: { position: 'absolute', bottom: 100, left: 20, right: 20, backgroundColor: colors.white, borderRadius: 20, padding: 20, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 5 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-  cafeName: { fontSize: 20, fontWeight: 'bold', color: colors.text, flex: 1 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-  ratingScore: { fontSize: 12, color: colors.text, marginLeft: 5, fontWeight: 'bold' },
-  cardMainContent: { flexDirection: 'row', marginBottom: 15 },
-  cafeImage: { width: 90, height: 90, borderRadius: 15, marginRight: 15 },
+  // 店家詳細卡片 (依據圖片重排)
+  detailCard: { position: 'absolute', bottom: 120, left: 20, right: 20, backgroundColor: colors.white, borderRadius: 25, padding: 20, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  cafeName: { fontSize: 20, fontWeight: '900', color: colors.text, marginRight: 10 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center' },
+  ratingScore: { fontSize: 10, color: colors.grayText, marginLeft: 4, fontWeight: 'bold' },
+  
+  cardMainContent: { flexDirection: 'row' },
+  cafeImage: { width: 100, height: 100, borderRadius: 15, marginRight: 15 },
   cardInfoColumn: { flex: 1, justifyContent: 'space-between' },
-  detailItem: { flexDirection: 'row', marginBottom: 5 },
-  detailLabel: { fontSize: 12, color: '#666', marginRight: 5, width: 60 }, 
-  detailText: { fontSize: 12, color: colors.text, flex: 1 },
-  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 5 },
-  tagBadge: { backgroundColor: colors.secondary, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 15, marginRight: 6, marginBottom: 6 },
-  tagText: { color: colors.text, fontSize: 10, fontWeight: 'bold' },
   
-  actionButtonRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  actionButton: { flex: 1, paddingVertical: 10, borderRadius: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  mapButton: { backgroundColor: colors.secondary, marginRight: 10 },
+  detailItem: { flexDirection: 'row', marginBottom: 4 },
+  detailLabel: { fontSize: 11, color: colors.text, fontWeight: 'bold', marginRight: 4 }, 
+  detailText: { fontSize: 11, color: colors.grayText, flex: 1, textDecorationLine: 'underline' }, // 圖片中地址有底線
+  
+  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6, marginBottom: 8 },
+  tagBadge: { backgroundColor: colors.secondary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginRight: 6, marginBottom: 6 },
+  tagText: { color: colors.primary, fontSize: 10, fontWeight: 'bold' },
+  
+  actionButtonRow: { flexDirection: 'row', justifyContent: 'flex-start', marginTop: 'auto' },
+  actionButton: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 15, marginRight: 8 },
+  mapButton: { backgroundColor: '#F0F0F0' },
   logButton: { backgroundColor: colors.primary },
-  mapButtonText: { color: colors.primary, fontWeight: 'bold', fontSize: 14 },
-  logButtonText: { color: colors.white, fontWeight: 'bold', fontSize: 14 },
+  mapButtonText: { color: colors.text, fontWeight: 'bold', fontSize: 12 },
+  logButtonText: { color: colors.white, fontWeight: 'bold', fontSize: 12 },
   
-  tabBar: { flexDirection: 'row', height: 80, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F5EEDC', paddingBottom: 20 },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center' }
+  // 新版導覽列
+  tabBarWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'transparent' },
+  tabBar: { flexDirection: 'row', height: 85, backgroundColor: colors.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: 0.05, shadowRadius: 10, paddingHorizontal: 15 },
+  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 15 },
+  tabItemActiveBg: { backgroundColor: colors.secondary, width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginTop: -8, marginBottom: 2 },
+  tabText: { fontSize: 10, color: colors.grayText, marginTop: 4, fontWeight: 'bold' },
+  tabTextActive: { color: colors.primary }
 });
