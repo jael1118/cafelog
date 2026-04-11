@@ -27,7 +27,6 @@ const ITEM_HEIGHT = 40;
 
 export default function AddLogScreen() {
   const router = useRouter();
-  // 🌟 接收從地圖傳過來的預設地點 (現在會是店名了)
   const { editLogData, prefillLocation } = useLocalSearchParams(); 
 
   const [editId, setEditId] = useState(null); 
@@ -119,7 +118,6 @@ export default function AddLogScreen() {
         console.error("解析編輯資料失敗", error);
       }
     } 
-    // 🌟 如果有帶地點參數 (從地圖來的店名)，自動填入
     else if (prefillLocation) {
         setLocation(prefillLocation);
     }
@@ -223,7 +221,6 @@ export default function AddLogScreen() {
     try {
       const dateString = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
 
-      // 🌟 無標題處理：如果沒打，自動存成「無標題」
       const finalTitle = title.trim() ? title : '無標題';
 
       const newLog = {
@@ -476,11 +473,12 @@ const styles = StyleSheet.create({
   doneButtonText: { color: colors.white, fontSize: 13, fontWeight: 'bold' },
 
   mainInfoContainer: { flexDirection: 'row', alignItems: 'stretch', marginBottom: 20 },
-  largeThumbnailBox: { width: 110, height: 110, backgroundColor: '#E0E0E0', borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 20, overflow: 'hidden' },
+  // 🌟 關鍵修改：將尺寸由 110 改為 140
+  largeThumbnailBox: { width: 140, height: 140, backgroundColor: '#E0E0E0', borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 15, overflow: 'hidden' },
   largeThumbnailImage: { width: '100%', height: '100%' },
   largeThumbnailText: { fontSize: 12, color: colors.text, fontWeight: 'bold' },
   
-  rightInfoColumn: { flex: 1, justifyContent: 'space-around', paddingVertical: 5 },
+  rightInfoColumn: { flex: 1, justifyContent: 'center', paddingVertical: 2 },
   titleInput: { fontSize: 16, fontWeight: 'bold', color: colors.text, padding: 0, marginBottom: 8 },
   
   locationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },

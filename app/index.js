@@ -135,8 +135,7 @@ export default function HomeScreen() {
       <TouchableOpacity 
         style={styles.calendarCellContainer} 
         key={`day-${index}`}
-        // 🌟 關鍵修改：移除了 if (hasLog)，現在不管有沒有紀錄，點擊都會進去！
-        onPress={() => router.push({ pathname: '/log', params: { date: cellDateStr } })}
+        onPress={() => router.push({ pathname: '/logbook', params: { filterDate: cellDateStr } })}
       >
         <View style={[
           styles.calendarDayBackground, 
@@ -207,7 +206,8 @@ export default function HomeScreen() {
             {randomLog ? (
               <TouchableOpacity 
                 style={styles.reviewCard}
-                onPress={() => router.push({ pathname: '/log', params: { date: randomLog.date } })}
+                // 🌟 修正：傳遞 id，這樣單篇日記頁才知道要抓哪一篇！
+                onPress={() => router.push({ pathname: '/log', params: { id: randomLog.id } })}
               >
                 <Image source={{ uri: randomLog.imageUrl }} style={styles.reviewImage} />
                 <View style={styles.reviewOverlay}>
@@ -235,7 +235,8 @@ export default function HomeScreen() {
                 style={styles.reviewCard}
                 onPress={() => {
                    const otherLogs = logs.filter(l => l.imageUrl && l.id !== randomLog.id);
-                   router.push({ pathname: '/log', params: { date: otherLogs[0].date } })
+                   // 🌟 修正：傳遞 id
+                   router.push({ pathname: '/log', params: { id: otherLogs[0].id } })
                 }}
               >
                 <Image source={{ uri: logs.filter(l => l.imageUrl && l.id !== randomLog.id)[0].imageUrl }} style={styles.reviewImage} />
@@ -263,7 +264,8 @@ export default function HomeScreen() {
       <Modal visible={isPickerVisible} transparent={true} animationType="fade">
         <View style={styles.modalContainer}>
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsPickerVisible(false)} />
-          <View style={styles.pickerCard}>
+          {/* 🌟 修正：把白色背景加回來，輪盤就不會變透明了！ */}
+          <View style={[styles.pickerCard, { backgroundColor: colors.pickerBg }]}>
             <View style={styles.pickerColumn}>
               <View style={styles.selectionHighlight} pointerEvents="none" />
               <ScrollView ref={yearScrollRef} showsVerticalScrollIndicator={false} snapToInterval={ITEM_HEIGHT} decelerationRate="fast" onMomentumScrollEnd={(e) => {
