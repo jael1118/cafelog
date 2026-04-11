@@ -1,25 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Alert, Image, Linking, Platform } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Alert, Image, Linking, Platform, Animated } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, usePathname } from 'expo-router';
+import { useRouter, usePathname, useFocusEffect } from 'expo-router'; 
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 
-// 🌟 全面換成與其他頁面一致的紫色/治癒系風格！
 const colors = {
-  primary: '#9B7ED9',         // 主要深紫 (標記、主要按鈕)
-  secondary: '#EBE5F5',       // 淺紫 (次要按鈕、背景)
-  background: '#F8F8FC',      // 頁面極淺灰紫底色
-  text: '#4A4A4A',            // 標題深灰色
-  grayText: '#888888',        // 次要灰色文字
+  primary: '#9B7ED9',         
+  secondary: '#EBE5F5',       
+  background: '#F8F8FC',      
+  text: '#4A4A4A',            
+  grayText: '#888888',        
   white: '#FFFFFF',
-  accentPink: '#FCA5F1',      // 裝飾粉紅
-  heart: '#FFB6C1',           // 愛心粉紅
+  accentPink: '#FCA5F1',      
+  heart: '#FCA5F1',           
 };
 
-// 🗺️ 客製化地圖樣式 (讓地圖變成你截圖中的復古淺綠色調)
 const customMapStyle = [
-  { "elementType": "geometry", "stylers": [{ "color": "#e0e3c8" }] }, // 復古淺綠底色
+  { "elementType": "geometry", "stylers": [{ "color": "#e0e3c8" }] }, 
   { "elementType": "labels.text.fill", "stylers": [{ "color": "#523735" }] },
   { "elementType": "labels.text.stroke", "stylers": [{ "color": "#f5f1e6" }] },
   { "featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{ "color": "#d59563" }] },
@@ -47,6 +46,67 @@ const placeholderImages = [
 let globalSavedRegion = null;
 let globalSavedCafes = [];
 
+// 🌟 獨立出一個會自己動的標記元件，解決左上角瞬移的 bug
+const AnimatedCafeMarker = ({ cafe, isSelected, isVisited, count, onPress }) => {
+  const scaleAnim = useRef(new Animated.Value(isSelected ? 1 : 0.01)).current;
+
+  useEffect(() => {
+    if (isSelected) {
+      scaleAnim.setValue(0.3);
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 5,
+        tension: 40,
+        useNativeDriver: false, 
+      }).start();
+    } else {
+      scaleAnim.setValue(0.01);
+    }
+  }, [isSelected]);
+
+  return (
+    <Marker 
+      coordinate={{ latitude: cafe.lat, longitude: cafe.lng }}
+      onPress={onPress}
+      style={{ zIndex: isSelected ? 999 : 1 }} // 選中的時候把它拉到最上層
+    >
+      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+        
+        {/* 1. 隱藏的底層：沒選中時顯示的圓圈 (去過 / 沒去過) */}
+        {!isSelected && (
+          isVisited ? (
+            <View style={styles.visitedMarker}>
+              <Text style={styles.visitCountText}>{count}</Text>
+            </View>
+          ) : (
+            <View style={styles.unvisitedMarker}>
+              <Ionicons name="cafe" size={14} color={colors.primary} />
+            </View>
+          )
+        )}
+
+        {/* 2. 動畫層：選中時彈出來的地圖釘 (預設隱藏) */}
+        <Animated.View 
+          style={{ 
+            transform: [{ scale: scaleAnim }], 
+            opacity: scaleAnim.interpolate({ inputRange: [0.01, 1], outputRange: [0, 1] }),
+            position: isSelected ? 'relative' : 'absolute',
+          }}
+        >
+          <Ionicons 
+            name="location" 
+            size={46} 
+            color={colors.primary} 
+            style={{ textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 3 }} 
+          />
+        </Animated.View>
+
+      </View>
+    </Marker>
+  );
+};
+
+
 export default function MapScreen() {
   const router = useRouter();
   const pathname = usePathname();
@@ -63,7 +123,36 @@ export default function MapScreen() {
   const [showSearchHereBtn, setShowSearchHereBtn] = useState(false); 
   const [isFirstLoad, setIsFirstLoad] = useState(true); 
 
+  const [visitData, setVisitData] = useState({});
+
   const excludeKeywords = ['50嵐', '清心', '麻古', '可不可', '迷客夏', '茶湯會', '萬波', '得正', '八曜', '手搖', '茶飲', 'TEA', 'Tea', '大苑子', '龜記', 'CoCo', '鮮茶道'];
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchVisited = async () => {
+        try {
+          const logsStr = await AsyncStorage.getItem('cafe_logs');
+          if (logsStr) {
+            const logs = JSON.parse(logsStr);
+            const data = {};
+            logs.forEach(log => {
+              if (log.location) {
+                const locName = log.location.toLowerCase().trim();
+                if (!data[locName]) {
+                  data[locName] = { count: 0, rating: log.rating || 0 };
+                }
+                data[locName].count += 1;
+              }
+            });
+            setVisitData(data);
+          }
+        } catch (error) {
+          console.error("讀取去過的地點失敗", error);
+        }
+      };
+      fetchVisited();
+    }, [])
+  );
 
   useEffect(() => {
     if (globalSavedRegion) {
@@ -128,7 +217,7 @@ export default function MapScreen() {
           imageUrl: placeholderImages[Math.floor(Math.random() * placeholderImages.length)],
           address: node.tags['addr:street'] ? `${node.tags['addr:street']}${node.tags['addr:housenumber'] || ''}` : '看地圖定位尋寶去 🐾',
           businessHours: node.tags.opening_hours || '營業時間未提供',
-          rating: (Math.random() * (5.0 - 3.8) + 3.8).toFixed(1),
+          rating: (Math.random() * (5.0 - 3.8) + 3.8).toFixed(1), 
           tags: ['#真實店家', node.tags.internet_access === 'wlan' ? '#有WiFi' : '#新發現']
         }));
 
@@ -174,12 +263,16 @@ export default function MapScreen() {
   };
 
   const openGoogleMaps = (cafe) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name)}`;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${cafe.lat},${cafe.lng}`;
     Linking.openURL(url).catch((err) => {
       console.error('無法打開地圖', err);
       Alert.alert('錯誤', '無法開啟地圖應用程式');
     });
   };
+
+  const selectedVData = selectedCafe ? visitData[selectedCafe.name.toLowerCase().trim()] : null;
+  const isSelectedVisited = selectedVData && selectedVData.count > 0;
+  const selectedUserRating = selectedVData ? selectedVData.rating : 0;
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -191,7 +284,7 @@ export default function MapScreen() {
             style={styles.map}
             initialRegion={userRegion}
             showsUserLocation={true}
-            customMapStyle={customMapStyle} // 🌟 套用復古淺綠色調濾鏡
+            customMapStyle={customMapStyle} 
             onPress={() => setSelectedCafe(null)}
             onRegionChangeComplete={(region) => {
               globalSavedRegion = region; 
@@ -202,21 +295,27 @@ export default function MapScreen() {
               setIsFirstLoad(false);
             }}
           >
-            {displayedCafes.map((cafe) => (
-              <Marker 
-                key={cafe.id}
-                coordinate={{ latitude: cafe.lat, longitude: cafe.lng }}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  setSelectedCafe(cafe);
-                }}
-              >
-                {/* 🌟 圖標改為紫色系 */}
-                <View style={[styles.customMarker, selectedCafe?.id === cafe.id && styles.activeMarker]}>
-                  <Ionicons name="cafe" size={16} color={selectedCafe?.id === cafe.id ? colors.primary : colors.white} />
-                </View>
-              </Marker>
-            ))}
+            {/* 🌟 替換為獨立的 AnimatedCafeMarker 元件 */}
+            {displayedCafes.map((cafe) => {
+              const vData = visitData[cafe.name.toLowerCase().trim()];
+              const count = vData ? vData.count : 0;
+              const isVisited = count > 0;
+              const isSelected = selectedCafe?.id === cafe.id;
+
+              return (
+                <AnimatedCafeMarker 
+                  key={cafe.id}
+                  cafe={cafe}
+                  isSelected={isSelected}
+                  isVisited={isVisited}
+                  count={count}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setSelectedCafe(cafe);
+                  }}
+                />
+              );
+            })}
           </MapView>
         ) : (
           <View style={styles.loadingFull}>
@@ -225,7 +324,6 @@ export default function MapScreen() {
           </View>
         )}
 
-        {/* 頂部搜尋框 */}
         <View style={styles.searchContainer}>
           <TextInput 
             style={styles.searchInput} 
@@ -237,14 +335,12 @@ export default function MapScreen() {
           <Ionicons name="search" size={20} color={colors.text} />
         </View>
 
-        {/* 右側定位按鈕 */}
         {userRegion && (
           <TouchableOpacity style={styles.locateButton} onPress={goToCurrentLocation}>
             <Ionicons name="locate" size={22} color={colors.primary} />
           </TouchableOpacity>
         )}
 
-        {/* 重新搜尋按鈕 */}
         {showSearchHereBtn && currentMapRegion && !isLoading && (
           <TouchableOpacity 
             style={styles.searchHereBtn}
@@ -262,18 +358,21 @@ export default function MapScreen() {
           </View>
         )}
 
-        {/* 🌟 選中店家後的卡片，依照圖片重新排版 */}
         {selectedCafe && (
           <View style={styles.detailCard}>
             <View style={styles.cardHeader}>
               <Text style={styles.cafeName} numberOfLines={1}>{selectedCafe.name}</Text>
               
-              <View style={styles.ratingRow}>
-                {[1, 2, 3, 4, 5].map((item, index) => (
-                  <Ionicons key={index} name="heart" size={12} color={colors.heart} style={{marginRight: 2}} />
-                ))}
-                <Text style={styles.ratingScore}>{selectedCafe.rating}</Text>
-              </View>
+              {isSelectedVisited ? (
+                <View style={styles.ratingRow}>
+                  {[1, 2, 3, 4, 5].map((item, index) => (
+                    <Ionicons key={index} name="heart" size={12} color={item <= selectedUserRating ? colors.heart : '#E0E0E0'} style={{marginRight: 2}} />
+                  ))}
+                  <Text style={styles.ratingScore}>{Number(selectedUserRating).toFixed(1)}</Text>
+                </View>
+              ) : (
+                <View style={styles.ratingRow}></View>
+              )}
             </View>
 
             <View style={styles.cardMainContent}>
@@ -289,7 +388,6 @@ export default function MapScreen() {
                   <Text style={styles.detailText} numberOfLines={1}>{selectedCafe.businessHours}</Text>
                 </View>
 
-                {/* 標籤群 */}
                 <View style={styles.tagsContainer}>
                   {selectedCafe.tags.map((tag, index) => (
                     <View key={index} style={styles.tagBadge}>
@@ -298,12 +396,17 @@ export default function MapScreen() {
                   ))}
                 </View>
                 
-                {/* 導航與紀錄按鈕移到這裡 */}
                 <View style={styles.actionButtonRow}>
                   <TouchableOpacity style={[styles.actionButton, styles.mapButton]} onPress={() => openGoogleMaps(selectedCafe)}>
                     <Text style={styles.mapButtonText}>開啟導航</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.actionButton, styles.logButton]} onPress={() => router.push('/add-log')}>
+                  <TouchableOpacity 
+                    style={[styles.actionButton, styles.logButton]} 
+                    onPress={() => router.push({
+                      pathname: '/addlog',
+                      params: { prefillTitle: selectedCafe.name, prefillLocation: selectedCafe.name }
+                    })}
+                  >
                     <Text style={styles.logButtonText}>寫紀錄</Text>
                   </TouchableOpacity>
                 </View>
@@ -313,7 +416,6 @@ export default function MapScreen() {
           </View>
         )}
 
-        {/* 🌟 依據設計圖製作的新版導覽列 */}
         <View style={styles.tabBarWrapper}>
           <View style={styles.tabBar}>
             <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/')}>
@@ -322,7 +424,6 @@ export default function MapScreen() {
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.tabItem} onPress={() => router.replace('/map')}>
-              {/* 目前在地圖頁，所以給它一個特別的紫色圓形背景 */}
               <View style={styles.tabItemActiveBg}>
                  <Ionicons name="map-outline" size={22} color={colors.primary} />
               </View>
@@ -351,7 +452,6 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   loadingFull: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
   
-  // 搜尋框 (變更為圖片中的長條純白樣式)
   searchContainer: { position: 'absolute', top: 60, left: 20, right: 20, flexDirection: 'row', backgroundColor: colors.white, borderRadius: 15, paddingHorizontal: 20, paddingVertical: 15, alignItems: 'center', justifyContent: 'space-between', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5 },
   searchInput: { flex: 1, fontSize: 16, color: colors.text, marginRight: 10 },
   
@@ -362,11 +462,10 @@ const styles = StyleSheet.create({
   loadingFloating: { position: 'absolute', top: 140, alignSelf: 'center', flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, alignItems: 'center', elevation: 3 },
   loadingFloatingText: { color: colors.primary, marginLeft: 8, fontWeight: 'bold', fontSize: 12 },
 
-  // 地圖圖標 (換成紫色系)
-  customMarker: { backgroundColor: colors.primary, padding: 6, borderRadius: 15, borderWidth: 2, borderColor: colors.white },
-  activeMarker: { backgroundColor: colors.white, borderColor: colors.primary },
+  unvisitedMarker: { backgroundColor: colors.white, borderColor: colors.primary, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, elevation: 3 }, 
+  visitedMarker: { backgroundColor: colors.primary, borderColor: colors.white, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, elevation: 3 }, 
+  visitCountText: { color: colors.white, fontSize: 12, fontWeight: 'bold' }, 
   
-  // 店家詳細卡片 (依據圖片重排)
   detailCard: { position: 'absolute', bottom: 120, left: 20, right: 20, backgroundColor: colors.white, borderRadius: 25, padding: 20, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
   cafeName: { fontSize: 20, fontWeight: '900', color: colors.text, marginRight: 10 },
@@ -379,7 +478,7 @@ const styles = StyleSheet.create({
   
   detailItem: { flexDirection: 'row', marginBottom: 4 },
   detailLabel: { fontSize: 11, color: colors.text, fontWeight: 'bold', marginRight: 4 }, 
-  detailText: { fontSize: 11, color: colors.grayText, flex: 1, textDecorationLine: 'underline' }, // 圖片中地址有底線
+  detailText: { fontSize: 11, color: colors.grayText, flex: 1, textDecorationLine: 'underline' }, 
   
   tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6, marginBottom: 8 },
   tagBadge: { backgroundColor: colors.secondary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginRight: 6, marginBottom: 6 },
@@ -392,7 +491,6 @@ const styles = StyleSheet.create({
   mapButtonText: { color: colors.text, fontWeight: 'bold', fontSize: 12 },
   logButtonText: { color: colors.white, fontWeight: 'bold', fontSize: 12 },
   
-  // 新版導覽列
   tabBarWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'transparent' },
   tabBar: { flexDirection: 'row', height: 85, backgroundColor: colors.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: 0.05, shadowRadius: 10, paddingHorizontal: 15 },
   tabItem: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 15 },

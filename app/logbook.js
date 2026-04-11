@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: 'bold', color: colors.text, flex: 1, marginRight: 5 },
   
   // 編輯按鈕樣式同步
-  editIconBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.secondary, justifyContent: 'center', alignItems: 'center' },
+  editIconBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   
   cardNote: { fontSize: 12, color: colors.grayText, lineHeight: 18, marginTop: 4 },
   

@@ -4,22 +4,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname, useFocusEffect } from 'expo-router'; 
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
 
-// 🌟 全面換成與你 logbook 一致的紫色系風格！
 const colors = {
-  primary: '#9B7ED9',         // 主要的深紫色 (咖啡杯圖示、選中文字)
-  secondary: '#EBE5F5',       // 淺紫色背景 (今天日期底色)
-  background: '#F8F8FC',      // 頁面的極淺灰紫底色
-  text: '#4A4A4A',            // 標題與主要文字 (深灰色，比較有現代感)
-  grayText: '#888888',        // 次要文字
+  primary: '#9B7ED9',         
+  secondary: '#EBE5F5',       
+  background: '#F8F8FC',      
+  text: '#4A4A4A',            
+  grayText: '#888888',        
   white: '#FFFFFF',
-  pastDateBg: '#F0F0F5',      // 過去日期的底色
-  pastDateText: '#C0C0C0',    // 過去日期的文字
+  pastDateBg: '#F0F0F5',      
+  pastDateText: '#C0C0C0',    
   
-  // --- 🌟 輪盤專屬的紫羅蘭配色 ---
-  pickerBg: '#FFFFFF',        // 輪盤底色 (乾淨的純白)
-  pickerHighlight: '#EBE5F5', // 輪盤選中時的高亮區塊 (淺紫色)
-  pickerText: '#D0C0ED',      // 輪盤未選中時的文字顏色 (淡紫色)
-  pickerTextSelected: '#9B7ED9'// 輪盤選中時的文字顏色 (深紫色)
+  pickerBg: '#FFFFFF',        
+  pickerHighlight: '#EBE5F5', 
+  pickerText: '#D0C0ED',      
+  pickerTextSelected: '#9B7ED9'
 };
 
 const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"];
@@ -137,7 +135,8 @@ export default function HomeScreen() {
       <TouchableOpacity 
         style={styles.calendarCellContainer} 
         key={`day-${index}`}
-        onPress={() => { if (hasLog) router.push({ pathname: '/log', params: { date: cellDateStr } }); }}
+        // 🌟 關鍵修改：移除了 if (hasLog)，現在不管有沒有紀錄，點擊都會進去！
+        onPress={() => router.push({ pathname: '/log', params: { date: cellDateStr } })}
       >
         <View style={[
           styles.calendarDayBackground, 
@@ -153,7 +152,6 @@ export default function HomeScreen() {
         </View>
         {hasLog && (
           <View style={styles.logIconContainer}>
-             {/* 🌟 確定全部都是可愛的咖啡杯圖示 */}
             <Ionicons name="cafe" size={10} color={colors.primary} />
           </View>
         )}
@@ -213,6 +211,9 @@ export default function HomeScreen() {
               >
                 <Image source={{ uri: randomLog.imageUrl }} style={styles.reviewImage} />
                 <View style={styles.reviewOverlay}>
+                  <View style={styles.reviewStarBadge}>
+                     <Ionicons name="star-outline" size={14} color={colors.white} />
+                  </View>
                   <View style={styles.reviewDateBadge}>
                     <Text style={styles.reviewDateMonth}>{new Date(randomLog.date).getMonth() + 1}月</Text>
                     <Text style={styles.reviewDateDay}>{String(new Date(randomLog.date).getDate()).padStart(2, '0')}</Text>
@@ -239,6 +240,9 @@ export default function HomeScreen() {
               >
                 <Image source={{ uri: logs.filter(l => l.imageUrl && l.id !== randomLog.id)[0].imageUrl }} style={styles.reviewImage} />
                 <View style={styles.reviewOverlay}>
+                  <View style={styles.reviewStarBadge}>
+                     <Ionicons name="star-outline" size={14} color={colors.white} />
+                  </View>
                   <View style={styles.reviewDateBadge}>
                     <Text style={styles.reviewDateMonth}>{new Date(logs.filter(l => l.imageUrl && l.id !== randomLog.id)[0].date).getMonth() + 1}月</Text>
                     <Text style={styles.reviewDateDay}>{String(new Date(logs.filter(l => l.imageUrl && l.id !== randomLog.id)[0].date).getDate()).padStart(2, '0')}</Text>
@@ -256,46 +260,32 @@ export default function HomeScreen() {
         <View style={{height: 100}} /> 
       </ScrollView>
 
-      {/* 🌟 年月輪盤選單 (已更新為紫色系) */}
       <Modal visible={isPickerVisible} transparent={true} animationType="fade">
         <View style={styles.modalContainer}>
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsPickerVisible(false)} />
-          
-          <View style={[styles.pickerCard, { backgroundColor: colors.pickerBg }]}>
+          <View style={styles.pickerCard}>
             <View style={styles.pickerColumn}>
-              {/* 高亮選中框 */}
-              <View style={[styles.selectionHighlight, { backgroundColor: colors.pickerHighlight }]} pointerEvents="none" />
+              <View style={styles.selectionHighlight} pointerEvents="none" />
               <ScrollView ref={yearScrollRef} showsVerticalScrollIndicator={false} snapToInterval={ITEM_HEIGHT} decelerationRate="fast" onMomentumScrollEnd={(e) => {
                 const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
                 if (years[idx]) setCurrentDate(prev => new Date(years[idx], prev.getMonth(), 1));
               }} contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}>
                 {years.map((y, index) => (
                   <TouchableOpacity key={y} style={styles.pickerItem} onPress={() => handleYearSelect(y, index)}>
-                    {/* 文字配色連動 */}
-                    <Text style={[
-                        styles.pickerItemText, 
-                        { color: colors.pickerText }, 
-                        y === currentDate.getFullYear() && { color: colors.pickerTextSelected }
-                    ]}>{y}年</Text>
+                    <Text style={[styles.pickerItemText, { color: colors.pickerText }, y === currentDate.getFullYear() && { color: colors.pickerTextSelected }]}>{y}年</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
             <View style={styles.pickerColumn}>
-              {/* 高亮選中框 */}
-              <View style={[styles.selectionHighlight, { backgroundColor: colors.pickerHighlight }]} pointerEvents="none" />
+              <View style={styles.selectionHighlight} pointerEvents="none" />
               <ScrollView ref={monthScrollRef} showsVerticalScrollIndicator={false} snapToInterval={ITEM_HEIGHT} decelerationRate="fast" onMomentumScrollEnd={(e) => {
                 const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
                 if (months[idx] !== undefined) setCurrentDate(prev => new Date(prev.getFullYear(), months[idx], 1));
               }} contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}>
                 {months.map((m, index) => (
                   <TouchableOpacity key={m} style={styles.pickerItem} onPress={() => handleMonthSelect(m, index)}>
-                    {/* 文字配色連動 */}
-                    <Text style={[
-                        styles.pickerItemText, 
-                        { color: colors.pickerText }, 
-                        m === currentDate.getMonth() && { color: colors.pickerTextSelected }
-                    ]}>{m + 1}月</Text>
+                    <Text style={[styles.pickerItemText, { color: colors.pickerText }, m === currentDate.getMonth() && { color: colors.pickerTextSelected }]}>{m + 1}月</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -326,10 +316,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </View>
-      
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push('/addlog')}>
-        <Ionicons name="add" size={32} color={colors.white} />
-      </TouchableOpacity>
 
     </SafeAreaView>
   );
@@ -339,8 +325,7 @@ const StatsCard = ({ label, value, unit }) => (
   <View style={styles.statsCard}>
     <View style={styles.statsLabelRow}>
        <Text style={styles.statsLabel}>{label}</Text>
-       {/* 🌟 統計小卡片的圖標也換成可愛的小咖啡杯了 */}
-       <Ionicons name="cafe-outline" size={14} color={colors.pickerText} />
+       <Ionicons name="star-outline" size={14} color={colors.pickerText} />
     </View>
     <View style={styles.statsValueContainer}>
       <Text style={styles.statsValue}>{value}</Text>
@@ -396,11 +381,13 @@ const styles = StyleSheet.create({
   reviewDateBadge: { backgroundColor: colors.white, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start', alignItems: 'center' },
   reviewDateMonth: { fontSize: 10, fontWeight: 'bold', color: colors.text },
   reviewDateDay: { fontSize: 16, fontWeight: '900', color: colors.text, marginTop: -2 },
+  
+  reviewStarBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: 'transparent' },
+  
   reviewLocationContainer: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' },
   reviewLocationText: { color: colors.white, fontSize: 10, fontWeight: 'bold', marginLeft: 2 },
   emptyReviewCard: { width: 150, height: 180, borderRadius: 15, backgroundColor: colors.secondary, justifyContent: 'center', alignItems: 'center' },
 
-  fab: { position: 'absolute', bottom: 110, right: 20, backgroundColor: '#FCA5F1', width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', elevation: 6, zIndex: 10 },
   tabBarWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'transparent' },
   tabBar: { flexDirection: 'row', height: 85, backgroundColor: colors.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: 0.05, shadowRadius: 10, paddingHorizontal: 15 },
   tabItem: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 15 },
