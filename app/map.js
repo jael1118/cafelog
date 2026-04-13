@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Alert, Image, Linking, Platform, Animated } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Alert, Image, Linking, FlatList } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname, useFocusEffect } from 'expo-router'; 
@@ -46,66 +46,34 @@ const placeholderImages = [
 let globalSavedRegion = null;
 let globalSavedCafes = [];
 
-// 🌟 獨立出一個會自己動的標記元件，解決左上角瞬移的 bug
-const AnimatedCafeMarker = ({ cafe, isSelected, isVisited, count, onPress }) => {
-  const scaleAnim = useRef(new Animated.Value(isSelected ? 1 : 0.01)).current;
-
-  useEffect(() => {
-    if (isSelected) {
-      scaleAnim.setValue(0.3);
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 5,
-        tension: 40,
-        useNativeDriver: false, 
-      }).start();
-    } else {
-      scaleAnim.setValue(0.01);
-    }
-  }, [isSelected]);
-
+const CafeMarker = ({ cafe, isSelected, isVisited, count, onPress }) => {
   return (
     <Marker 
       coordinate={{ latitude: cafe.lat, longitude: cafe.lng }}
       onPress={onPress}
-      style={{ zIndex: isSelected ? 999 : 1 }} // 選中的時候把它拉到最上層
+      style={{ zIndex: isSelected ? 999 : 1 }} 
     >
-      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-        
-        {/* 1. 隱藏的底層：沒選中時顯示的圓圈 (去過 / 沒去過) */}
-        {!isSelected && (
-          isVisited ? (
-            <View style={styles.visitedMarker}>
-              <Text style={styles.visitCountText}>{count}</Text>
-            </View>
-          ) : (
-            <View style={styles.unvisitedMarker}>
-              <Ionicons name="cafe" size={14} color={colors.primary} />
-            </View>
-          )
-        )}
-
-        {/* 2. 動畫層：選中時彈出來的地圖釘 (預設隱藏) */}
-        <Animated.View 
-          style={{ 
-            transform: [{ scale: scaleAnim }], 
-            opacity: scaleAnim.interpolate({ inputRange: [0.01, 1], outputRange: [0, 1] }),
-            position: isSelected ? 'relative' : 'absolute',
-          }}
-        >
+      <View style={{ width: 50, height: 50, alignItems: 'center', justifyContent: 'center' }}>
+        {isSelected ? (
           <Ionicons 
             name="location" 
             size={46} 
             color={colors.primary} 
             style={{ textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 3 }} 
           />
-        </Animated.View>
-
+        ) : isVisited ? (
+          <View style={styles.visitedMarker}>
+            <Text style={styles.visitCountText}>{count}</Text>
+          </View>
+        ) : (
+          <View style={styles.unvisitedMarker}>
+            <Ionicons name="cafe" size={14} color={colors.primary} />
+          </View>
+        )}
       </View>
     </Marker>
   );
 };
-
 
 export default function MapScreen() {
   const router = useRouter();
@@ -124,6 +92,7 @@ export default function MapScreen() {
   const [isFirstLoad, setIsFirstLoad] = useState(true); 
 
   const [visitData, setVisitData] = useState({});
+  const [isSearchListVisible, setIsSearchListVisible] = useState(false);
 
   const excludeKeywords = ['50嵐', '清心', '麻古', '可不可', '迷客夏', '茶湯會', '萬波', '得正', '八曜', '手搖', '茶飲', 'TEA', 'Tea', '大苑子', '龜記', 'CoCo', '鮮茶道'];
 
@@ -215,7 +184,7 @@ export default function MapScreen() {
           lat: node.lat,
           lng: node.lon,
           imageUrl: placeholderImages[Math.floor(Math.random() * placeholderImages.length)],
-          address: node.tags['addr:street'] ? `${node.tags['addr:street']}${node.tags['addr:housenumber'] || ''}` : '看地圖定位尋寶去 🐾',
+          address: node.tags['addr:street'] ? `${node.tags['addr:street']}${node.tags['addr:housenumber'] || ''}` : `${node.lat.toFixed(5)}, ${node.lon.toFixed(5)}`,
           businessHours: node.tags.opening_hours || '營業時間未提供',
           rating: (Math.random() * (5.0 - 3.8) + 3.8).toFixed(1), 
           tags: ['#真實店家', node.tags.internet_access === 'wlan' ? '#有WiFi' : '#新發現']
@@ -242,6 +211,11 @@ export default function MapScreen() {
       setDisplayedCafes(allCafes);
     }
     setSelectedCafe(null);
+  };
+
+  const handleSearchSubmit = () => {
+    Keyboard.dismiss();
+    setIsSearchListVisible(true);
   };
 
   const goToCurrentLocation = async () => {
@@ -275,7 +249,10 @@ export default function MapScreen() {
   const selectedUserRating = selectedVData ? selectedVData.rating : 0;
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <TouchableWithoutFeedback onPress={() => {
+      Keyboard.dismiss();
+      setIsSearchListVisible(false);
+    }}>
       <View style={styles.container}>
         
         {userRegion ? (
@@ -285,7 +262,10 @@ export default function MapScreen() {
             initialRegion={userRegion}
             showsUserLocation={true}
             customMapStyle={customMapStyle} 
-            onPress={() => setSelectedCafe(null)}
+            onPress={() => {
+              setSelectedCafe(null);
+              setIsSearchListVisible(false);
+            }}
             onRegionChangeComplete={(region) => {
               globalSavedRegion = region; 
               setCurrentMapRegion(region);
@@ -295,7 +275,6 @@ export default function MapScreen() {
               setIsFirstLoad(false);
             }}
           >
-            {/* 🌟 替換為獨立的 AnimatedCafeMarker 元件 */}
             {displayedCafes.map((cafe) => {
               const vData = visitData[cafe.name.toLowerCase().trim()];
               const count = vData ? vData.count : 0;
@@ -303,8 +282,8 @@ export default function MapScreen() {
               const isSelected = selectedCafe?.id === cafe.id;
 
               return (
-                <AnimatedCafeMarker 
-                  key={cafe.id}
+                <CafeMarker 
+                  key={`${cafe.id}-${isSelected}`} 
                   cafe={cafe}
                   isSelected={isSelected}
                   isVisited={isVisited}
@@ -312,6 +291,7 @@ export default function MapScreen() {
                   onPress={(e) => {
                     e.stopPropagation();
                     setSelectedCafe(cafe);
+                    setIsSearchListVisible(false);
                   }}
                 />
               );
@@ -331,9 +311,47 @@ export default function MapScreen() {
             placeholderTextColor={colors.grayText} 
             value={searchText}
             onChangeText={handleSearch}
+            onSubmitEditing={handleSearchSubmit} 
+            returnKeyType="search"
           />
-          <Ionicons name="search" size={20} color={colors.text} />
+          <TouchableOpacity onPress={handleSearchSubmit}>
+            <Ionicons name="search" size={20} color={colors.text} />
+          </TouchableOpacity>
         </View>
+
+        {isSearchListVisible && (
+          <View style={styles.searchListContainer}>
+            <View style={styles.searchListHeader}>
+              <Text style={styles.searchListTitle}>搜尋結果 ({displayedCafes.length})</Text>
+              <TouchableOpacity onPress={() => setIsSearchListVisible(false)}>
+                <Ionicons name="close-circle" size={24} color={colors.grayText} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={displayedCafes}
+              keyExtractor={item => item.id}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({item}) => (
+                <TouchableOpacity style={styles.searchListItem} onPress={() => {
+                  setIsSearchListVisible(false);
+                  setSelectedCafe(item);
+                  mapRef.current?.animateToRegion({
+                    latitude: item.lat,
+                    longitude: item.lng,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01
+                  }, 800);
+                }}>
+                  <Ionicons name="location-outline" size={20} color={colors.primary} style={{marginRight: 10}}/>
+                  <View style={{flex: 1}}>
+                    <Text style={styles.searchListItemName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.searchListItemAddress} numberOfLines={1}>{item.address}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        )}
 
         {userRegion && (
           <TouchableOpacity style={styles.locateButton} onPress={goToCurrentLocation}>
@@ -380,7 +398,9 @@ export default function MapScreen() {
               
               <View style={styles.cardInfoColumn}>
                 <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>地址:</Text>
+                  <Text style={styles.detailLabel}>
+                    {/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(selectedCafe.address) ? '座標:' : '地址:'}
+                  </Text>
                   <Text style={styles.detailText} numberOfLines={2}>{selectedCafe.address}</Text>
                 </View>
                 <View style={styles.detailItem}>
@@ -455,9 +475,16 @@ const styles = StyleSheet.create({
   searchContainer: { position: 'absolute', top: 60, left: 20, right: 20, flexDirection: 'row', backgroundColor: colors.white, borderRadius: 15, paddingHorizontal: 20, paddingVertical: 15, alignItems: 'center', justifyContent: 'space-between', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5 },
   searchInput: { flex: 1, fontSize: 16, color: colors.text, marginRight: 10 },
   
+  searchListContainer: { position: 'absolute', top: 120, left: 20, right: 20, maxHeight: 300, backgroundColor: colors.white, borderRadius: 15, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, zIndex: 20, overflow: 'hidden' },
+  searchListHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: colors.secondary },
+  searchListTitle: { fontSize: 14, fontWeight: 'bold', color: colors.text },
+  searchListItem: { flexDirection: 'row', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#F8F8FC' },
+  searchListItemName: { fontSize: 14, fontWeight: 'bold', color: colors.text },
+  searchListItemAddress: { fontSize: 12, color: colors.grayText, marginTop: 4 },
+
   locateButton: { position: 'absolute', top: 140, right: 20, backgroundColor: colors.white, width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, zIndex: 10 },
   searchHereBtn: { position: 'absolute', top: 140, alignSelf: 'center', flexDirection: 'row', backgroundColor: colors.white, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, zIndex: 10 },
-  searchHereText: { color: colors.primary, fontWeight: 'bold', fontSize: 14 },
+  searchHereText: { color: colors.primary, fontWeight: 'bold', fontSize: 14 ,includeFontPadding: false},
   
   loadingFloating: { position: 'absolute', top: 140, alignSelf: 'center', flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, alignItems: 'center', elevation: 3 },
   loadingFloatingText: { color: colors.primary, marginLeft: 8, fontWeight: 'bold', fontSize: 12 },
@@ -468,7 +495,7 @@ const styles = StyleSheet.create({
   
   detailCard: { position: 'absolute', bottom: 120, left: 20, right: 20, backgroundColor: colors.white, borderRadius: 25, padding: 20, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-  cafeName: { fontSize: 20, fontWeight: '900', color: colors.text, marginRight: 10 },
+  cafeName: { fontSize: 20, fontWeight: '900', color: colors.text, marginRight: 10, flex: 1 },
   ratingRow: { flexDirection: 'row', alignItems: 'center' },
   ratingScore: { fontSize: 10, color: colors.grayText, marginLeft: 4, fontWeight: 'bold' },
   

@@ -165,8 +165,8 @@ const styles = StyleSheet.create({
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   ratingNumber: { fontSize: 12, color: colors.grayText, marginLeft: 6, fontWeight: 'bold' },
   
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap' },
-  tagBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.secondary, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 15, marginRight: 6, marginBottom: 6 },
+  tagRow: { flexDirection: 'row', marginTop: 4 },
+  tagBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.secondary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, marginRight: 8 },
   tagText: { fontSize: 10, color: colors.primaryText, fontWeight: 'bold' },
 
   noteBox: { marginBottom: 20 },

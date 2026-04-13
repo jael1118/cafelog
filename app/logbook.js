@@ -21,7 +21,6 @@ export default function LogbookScreen() {
   const router = useRouter();
   const pathname = usePathname();
   
-  // 🌟 接收從月曆傳來的「特定日期」
   const { filterDate } = useLocalSearchParams();
 
   const [logs, setLogs] = useState([]);
@@ -48,7 +47,6 @@ export default function LogbookScreen() {
   const processedLogs = useMemo(() => {
     let filtered = logs;
     
-    // 🌟 如果是從月曆點進來的，就只顯示那一天的日記！
     if (filterDate) {
         filtered = filtered.filter(log => log.date === filterDate);
     }
@@ -80,9 +78,9 @@ export default function LogbookScreen() {
       <TouchableOpacity 
         style={styles.cardContainer} 
         activeOpacity={0.9}
-        // 🌟 關鍵：點擊卡片時，傳遞這篇日記的專屬「ID」給獨立日記頁
         onPress={() => router.push({ pathname: '/log', params: { id: item.id } })}
       >
+        {/* 🌟 左側圖片區塊（含日期、地點、星等） */}
         <View style={styles.cardImageWrapper}>
           <ImageBackground source={{ uri: item.imageUrl || 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=300&auto=format&fit=crop' }} style={styles.cardImage}>
             <View style={styles.imageOverlay}>
@@ -106,17 +104,15 @@ export default function LogbookScreen() {
           </ImageBackground>
         </View>
 
+        {/* 🌟 右側文字區塊（含標題、編輯圖示、筆記、標籤） */}
         <View style={styles.cardTextWrapper}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-            <TouchableOpacity style={styles.editIconBtn} onPress={(e) => {
-                e.stopPropagation(); 
-                router.push({ pathname: '/addlog', params: { editLogData: JSON.stringify(item) } });
-              }}>
-              <Ionicons name="pencil" size={12} color={colors.primaryText} />
-            </TouchableOpacity>
+            {/* 編輯小圖示 */}
+            
           </View>
-          <Text style={styles.cardNote} numberOfLines={2}>{item.note || '沒有留下筆記...'}</Text>
+          <Text style={styles.cardNote} numberOfLines={3}>{item.note || '沒有留下筆記...'}</Text>
+          
           <View style={styles.cardTagsRow}>
             {tagsArray.slice(0, 2).map((tag, idx) => (
               <View key={idx} style={styles.tagBadge}><Text style={styles.tagText}>{tag}</Text></View>
@@ -128,7 +124,6 @@ export default function LogbookScreen() {
     );
   };
 
-  // 🌟 動態標題：如果有日期，就顯示那天的日期，否則顯示「紀錄本」
   const displayTitle = filterDate ? `${filterDate.split('-')[0]}年${parseInt(filterDate.split('-')[1])}月${parseInt(filterDate.split('-')[2])}日` : '紀錄本';
 
   return (
@@ -136,7 +131,6 @@ export default function LogbookScreen() {
       <ImageBackground source={{ uri: dotPattern }} style={{ flex: 1 }} resizeMode="repeat" imageStyle={{ opacity: 0.25, tintColor: '#CBB5F5' }}>
         
         <View style={styles.header}>
-          {/* 如果是從月曆來的，顯示返回按鈕 */}
           {filterDate && (
              <TouchableOpacity style={{ marginRight: 15 }} onPress={() => router.back()}>
                 <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -145,20 +139,21 @@ export default function LogbookScreen() {
           <Text style={styles.headerTitle}>{displayTitle}</Text>
         </View>
 
-        <View style={styles.toolbarRow}>
-          <View style={styles.searchPill}>
-            <Ionicons name="search" size={16} color={colors.primaryText} />
-            <TextInput style={styles.searchInput} placeholder="搜尋內容" placeholderTextColor={colors.grayText} value={searchQuery} onChangeText={setSearchQuery} />
+        {!filterDate && (
+          <View style={styles.toolbarRow}>
+            <View style={styles.searchPill}>
+              <Ionicons name="search" size={16} color={colors.primaryText} />
+              <TextInput style={styles.searchInput} placeholder="搜尋內容" placeholderTextColor={colors.grayText} value={searchQuery} onChangeText={setSearchQuery} />
+            </View>
+            <TouchableOpacity style={styles.sortPill} onPress={() => setIsSortModalVisible(true)}>
+              <Ionicons name="list" size={16} color={colors.primaryText} />
+              <Text style={styles.sortText}>{sortType === 'newest' ? '最新' : sortType === 'oldest' ? '最舊' : '評分'}</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.sortPill} onPress={() => setIsSortModalVisible(true)}>
-            <Ionicons name="list" size={16} color={colors.primaryText} />
-            <Text style={styles.sortText}>{sortType === 'newest' ? '最新' : sortType === 'oldest' ? '最舊' : '評分'}</Text>
-          </TouchableOpacity>
-        </View>
+        )}
 
         {processedLogs.length === 0 ? (
           <View style={styles.emptyState}>
-            {/* 🌟 依據許願：空狀態時顯示沒有紀錄，並加上獨立的新增按鈕 */}
             <Ionicons name="book-outline" size={60} color={'#EBE5F5'} style={{ marginBottom: 15 }} />
             <Text style={styles.emptyText}>{filterDate ? '這天沒有相關紀錄 ☕️' : '找不到相關紀錄 ☕️'}</Text>
             {filterDate && (
@@ -198,7 +193,6 @@ export default function LogbookScreen() {
           </TouchableOpacity>
         )}
 
-        {/* 只有在「非單日模式」才顯示底部導覽列 */}
         {!filterDate && (
           <View style={styles.tabBarWrapper}>
             <View style={styles.tabBar}>
@@ -232,9 +226,10 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   toolbarRow: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 15 },
   searchPill: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.85)', borderColor: colors.secondary, borderWidth: 1, borderRadius: 25, paddingHorizontal: 15, height: 40, marginRight: 10 },
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: colors.text },
+  // 🌟 修正搜尋框字體往下偏移：加上 textAlignVertical: 'center'
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: colors.text, includeFontPadding: false, textAlignVertical: 'center' },
   sortPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 25, paddingHorizontal: 18, height: 40, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
-  sortText: { marginLeft: 5, fontSize: 14, color: colors.primaryText, fontWeight: 'bold' },
+  sortText: { includeFontPadding: false, marginLeft: 5, fontSize: 14, color: colors.primaryText, fontWeight: 'bold' },
   listContent: { paddingHorizontal: 20, paddingBottom: 120 }, 
   
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 },
@@ -242,26 +237,30 @@ const styles = StyleSheet.create({
   emptyAddBtn: { flexDirection: 'row', backgroundColor: colors.primaryText, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 25, alignItems: 'center', elevation: 4 },
   emptyAddBtnText: { color: colors.white, fontWeight: 'bold', fontSize: 15 },
 
-  cardContainer: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 20, marginBottom: 15, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, overflow: 'hidden', height: 130 },
-  cardImageWrapper: { width: 140, height: '100%' },
+  // 🌟 全新卡片樣式：符合截圖設計
+  cardContainer: { flexDirection: 'row', backgroundColor: colors.white, borderRadius: 20, marginBottom: 15, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, overflow: 'hidden', height: 160 },
+  cardImageWrapper: { width: 150, height: '100%' },
   cardImage: { flex: 1, resizeMode: 'cover' },
-  imageOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'space-between', padding: 8 },
-  dateBadge: { backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start', alignItems: 'center' },
+  imageOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.15)', justifyContent: 'space-between', padding: 12 },
+  dateBadge: { backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, alignSelf: 'flex-start', alignItems: 'center' },
   dateBadgeMonth: { fontSize: 10, fontWeight: 'bold', color: colors.text },
   dateBadgeDay: { fontSize: 18, fontWeight: '900', color: colors.text, marginTop: -2 },
   imageBottomInfo: { justifyContent: 'flex-end' },
-  imageLocationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
-  imageLocationText: { fontSize: 10, color: colors.white, fontWeight: '600' },
+  imageLocationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  imageLocationText: { fontSize: 11, color: colors.white, fontWeight: '700', marginLeft: 2 },
   imageRatingRow: { flexDirection: 'row', alignItems: 'center' },
-  imageRatingText: { fontSize: 10, color: colors.white, fontWeight: 'bold', marginLeft: 4 },
-  cardTextWrapper: { flex: 1, padding: 12, justifyContent: 'space-between' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: colors.text, flex: 1, marginRight: 5 },
-  editIconBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.secondary, justifyContent: 'center', alignItems: 'center' },
-  cardNote: { fontSize: 12, color: colors.grayText, lineHeight: 18, marginTop: 4 },
-  cardTagsRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
-  tagBadge: { backgroundColor: colors.secondary, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginRight: 6 },
+  imageRatingText: { fontSize: 11, color: colors.white, fontWeight: 'bold', marginLeft: 6 },
+  
+  cardTextWrapper: { flex: 1, padding: 15, justifyContent: 'space-between' },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardTitle: { fontSize: 16, fontWeight: 'bold', color: colors.text, flex: 1, marginRight: 10 },
+  editIconWrapper: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  cardNote: { fontSize: 12, color: colors.grayText, lineHeight: 18, flex: 1, marginTop: 8 },
+  
+  cardTagsRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 },
+  tagBadge: { backgroundColor: colors.secondary, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6, marginRight: 6, marginBottom: 4 },
   tagText: { color: colors.primaryText, fontSize: 10, fontWeight: 'bold' },
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'flex-end' },
   sortModalCard: { backgroundColor: colors.white, borderTopLeftRadius: 25, borderTopRightRadius: 25, padding: 25, paddingBottom: 40 },
   sortModalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 20, textAlign: 'center' },

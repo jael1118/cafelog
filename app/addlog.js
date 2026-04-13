@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, Modal, Keyboard } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, Modal, Keyboard, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -33,7 +33,7 @@ export default function AddLogScreen() {
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [rating, setRating] = useState(0);
-  const [tags, setTags] = useState('');
+  const [tagList, setTagList] = useState(['']);
   const [note, setNote] = useState('');
   const [imageUri, setImageUri] = useState(null); 
   
@@ -94,9 +94,15 @@ export default function AddLogScreen() {
         setTitle(log.title === '無標題' ? '' : (log.title || ''));
         setLocation(log.location || '');
         setRating(log.rating || 0);
-        setTags(log.tags || '');
         setNote(log.note || '');
         setImageUri(log.imageUrl || null);
+        
+        if (log.tags) {
+           const parsedTags = log.tags.split(' ').filter(Boolean);
+           setTagList([...parsedTags, '']);
+        } else {
+           setTagList(['']);
+        }
         
         if (log.largeImageUrl) {
             setLargeImageUris([log.largeImageUrl]);
@@ -185,29 +191,49 @@ export default function AddLogScreen() {
   const formattedTimeOnly = `${String(selectedDate.getHours()).padStart(2, '0')}:${String(selectedDate.getMinutes()).padStart(2, '0')}`;
   const formattedTimeFull = `${formattedDateOnly} ${formattedTimeOnly}`;
 
+  const requestLibraryPermission = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('需要權限', '請允許 App 存取您的相簿才能選擇照片 📷');
+      return false;
+    }
+    return true;
+  };
+
+  const requestCameraPermission = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('需要權限', '請允許 App 使用相機才能拍攝照片 📸');
+      return false;
+    }
+    return true;
+  };
+
   const pickImage = async () => {
+    if (!(await requestLibraryPermission())) return;
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: true, // 縮圖維持可裁切正方形
       aspect: [1, 1], 
       quality: 0.8,
     });
     if (!result.canceled) setImageUri(result.assets[0].uri);
   };
 
+  // 🌟 還原：取消大照片的 allowsEditing，直接選取/拍攝原圖
   const openCameraForLargeImage = async () => {
+    if (!(await requestCameraPermission())) return;
     let result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false, 
       quality: 0.8,
     });
     if (!result.canceled) setLargeImageUris(prev => [...prev, result.assets[0].uri]);
   };
 
   const openLibraryForLargeImage = async () => {
+    if (!(await requestLibraryPermission())) return;
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false, 
       quality: 0.8,
     });
     if (!result.canceled) setLargeImageUris(prev => [...prev, result.assets[0].uri]);
@@ -217,11 +243,21 @@ export default function AddLogScreen() {
       setLargeImageUris(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
+  const handleTagChange = (val, index) => {
+    let newList = [...tagList];
+    newList[index] = val;
+    if (index === newList.length - 1 && val.trim() !== '') {
+      newList.push('');
+    }
+    setTagList(newList);
+  };
+
   const handleSaveLog = async () => {
     try {
       const dateString = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-
       const finalTitle = title.trim() ? title : '無標題';
+      
+      const finalTags = tagList.filter(t => t.trim() !== '').join(' ');
 
       const newLog = {
         id: editId ? editId : Date.now().toString(),
@@ -229,7 +265,7 @@ export default function AddLogScreen() {
         title: finalTitle,
         location: location,
         rating: rating,
-        tags: tags,
+        tags: finalTags,
         note: note,
         imageUrl: imageUri,
         largeImageUris: largeImageUris, 
@@ -249,8 +285,7 @@ export default function AddLogScreen() {
 
       await AsyncStorage.setItem('cafe_logs', JSON.stringify(currentLogs));
       
-      if (editId) router.replace('/'); 
-      else router.back();
+      router.back();
 
     } catch (error) {
       console.error('儲存失敗', error);
@@ -258,8 +293,11 @@ export default function AddLogScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+      style={{ flex: 1, backgroundColor: colors.white }}
+    >
+      <SafeAreaView style={styles.container}>
         <ScrollView style={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           
           <View style={styles.topNavRow}>
@@ -323,16 +361,20 @@ export default function AddLogScreen() {
               </View>
 
               <View style={styles.tagRow}>
-                <View style={styles.tagBadge}>
-                  <TextInput
-                    style={styles.tagInput}
-                    placeholder="關鍵字..."
-                    placeholderTextColor={colors.tagText}
-                    value={tags}
-                    onChangeText={setTags}
-                  />
-                  <Ionicons name="pencil" size={12} color={colors.tagText} />
-                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {tagList.map((tag, index) => (
+                    <View key={index} style={styles.tagBadge}>
+                      <TextInput
+                        style={styles.tagInput}
+                        placeholder={index === 0 && tagList.length === 1 ? "關鍵字..." : "+ 新增"}
+                        placeholderTextColor={colors.tagText}
+                        value={tag}
+                        onChangeText={(val) => handleTagChange(val, index)}
+                      />
+                      {tag !== '' && <Ionicons name="pencil" size={10} color={colors.tagText} style={{ marginLeft: 2 }} />}
+                    </View>
+                  ))}
+                </ScrollView>
               </View>
             </View>
           </View>
@@ -348,6 +390,7 @@ export default function AddLogScreen() {
 
           <View style={styles.imagesContainer}>
               {largeImageUris.map((uri, index) => (
+                  // 🌟 還原：改回原本的高度 220，並移除 TouchableOpacity 點擊替換功能
                   <View key={index} style={styles.largeImageDisplayBox}>
                      <Image source={{ uri: uri }} style={styles.largeImage} />
                      <TouchableOpacity 
@@ -360,18 +403,18 @@ export default function AddLogScreen() {
               ))}
           </View>
 
-          <View style={{height: 100}} /> 
+          <View style={{height: 20}} /> 
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      <View style={[styles.bottomToolbar, { bottom: keyboardHeight > 0 ? keyboardHeight : 0 }]}>
-        <TouchableOpacity style={styles.toolbarBtn} onPress={openCameraForLargeImage}>
-           <Ionicons name="camera-outline" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.toolbarBtn} onPress={openLibraryForLargeImage}>
-           <Ionicons name="image-outline" size={24} color={colors.text} />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.bottomToolbar}>
+          <TouchableOpacity style={styles.toolbarBtn} onPress={openCameraForLargeImage}>
+             <Ionicons name="camera-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.toolbarBtn} onPress={openLibraryForLargeImage}>
+             <Ionicons name="image-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
 
       <Modal visible={isDatePickerVisible} transparent={true} animationType="fade">
         <View style={styles.modalContainer}>
@@ -459,7 +502,7 @@ export default function AddLogScreen() {
         </View>
       </Modal>
 
-    </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -473,33 +516,35 @@ const styles = StyleSheet.create({
   doneButtonText: { color: colors.white, fontSize: 13, fontWeight: 'bold' },
 
   mainInfoContainer: { flexDirection: 'row', alignItems: 'stretch', marginBottom: 20 },
-  // 🌟 關鍵修改：將尺寸由 110 改為 140
   largeThumbnailBox: { width: 140, height: 140, backgroundColor: '#E0E0E0', borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 15, overflow: 'hidden' },
-  largeThumbnailImage: { width: '100%', height: '100%' },
+  largeThumbnailImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   largeThumbnailText: { fontSize: 12, color: colors.text, fontWeight: 'bold' },
   
-  rightInfoColumn: { flex: 1, justifyContent: 'center', paddingVertical: 2 },
-  titleInput: { fontSize: 16, fontWeight: 'bold', color: colors.text, padding: 0, marginBottom: 8 },
+  rightInfoColumn: { flex: 1, justifyContent: 'center', paddingVertical: 2, overflow: 'hidden' },
+  
+  titleInput: { fontSize: 16, fontWeight: 'bold', color: colors.text, padding: 0, margin: 0, marginBottom: 8, includeFontPadding: false, textAlignVertical: 'center' },
   
   locationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  locationInput: { fontSize: 12, color: colors.grayText, marginLeft: 4, padding: 0, flex: 1 },
+  locationInput: { fontSize: 12, color: colors.grayText, marginLeft: 4, padding: 0, margin: 0, flex: 1, includeFontPadding: false, textAlignVertical: 'center' },
   dropdownBtn: { padding: 2 }, 
   
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   ratingNumber: { fontSize: 10, color: colors.grayText, marginLeft: 8, fontWeight: 'bold' },
   
-  tagRow: { flexDirection: 'row' },
-  tagBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.secondary, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 15 },
-  tagInput: { fontSize: 10, color: colors.tagText, padding: 0, marginRight: 5, minWidth: 40, fontWeight: 'bold' },
+  tagRow: { flexDirection: 'row', marginTop: 4 },
+  tagBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.secondary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, marginRight: 8 },
+  tagInput: { fontSize: 11, color: colors.tagText, padding: 0, margin: 0, minWidth: 40, fontWeight: 'bold', includeFontPadding: false, textAlignVertical: 'center' },
 
   noteTextArea: { fontSize: 14, color: colors.text, lineHeight: 24, textAlignVertical: 'top', minHeight: 100, marginTop: 10 },
   
   imagesContainer: { marginTop: 10 },
-  largeImageDisplayBox: { width: '100%', height: 220, borderRadius: 15, overflow: 'hidden', marginBottom: 15 },
-  largeImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  removeImageBtn: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.4)', width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  // 🌟 還原：改回原本的固定高度 220
+  largeImageDisplayBox: { width: '100%', height: 220, borderRadius: 15, overflow: 'hidden', marginBottom: 15 }, 
+  // 🌟 還原：改回 resizeMode: 'cover'
+  largeImage: { width: '100%', height: '100%', resizeMode: 'cover' }, 
+  removeImageBtn: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.4)', width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
 
-  bottomToolbar: { position: 'absolute', left: 0, right: 0, height: 50, backgroundColor: colors.background, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, borderTopWidth: 1, borderTopColor: '#EBE5F5' },
+  bottomToolbar: { height: 50, backgroundColor: colors.background, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, borderTopWidth: 1, borderTopColor: '#EBE5F5' },
   toolbarBtn: { padding: 10, marginRight: 5 },
 
   modalContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },

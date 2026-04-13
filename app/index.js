@@ -160,12 +160,15 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.logoText}>統計資料</Text>
-      </View>
-
+      {/* 🌟 修改 1：拿掉外層的固定 header，移到 ScrollView 裡面 */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         
+        {/* 🌟 移進來的 header */}
+        <View style={styles.header}>
+          {/* 🌟 修改 2：將 fontSize 改為 18，與其他區塊標題統一 */}
+          <Text style={styles.sectionTitle}>統計資料</Text>
+        </View>
+
         <View style={styles.statsSection}>
           <View style={styles.statsRow}>
             <StatsCard label="累積" value={stats.total} unit="咖" />
@@ -206,7 +209,6 @@ export default function HomeScreen() {
             {randomLog ? (
               <TouchableOpacity 
                 style={styles.reviewCard}
-                // 🌟 修正：傳遞 id，這樣單篇日記頁才知道要抓哪一篇！
                 onPress={() => router.push({ pathname: '/log', params: { id: randomLog.id } })}
               >
                 <Image source={{ uri: randomLog.imageUrl }} style={styles.reviewImage} />
@@ -220,7 +222,7 @@ export default function HomeScreen() {
                   </View>
                   <View style={styles.reviewLocationContainer}>
                      <Ionicons name="location-outline" size={12} color={colors.white} />
-                     <Text style={styles.reviewLocationText}>{randomLog.location || '秘密基地'}</Text>
+                     <Text style={styles.reviewLocationText} numberOfLines={1}>{randomLog.location || '秘密基地'}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -235,7 +237,6 @@ export default function HomeScreen() {
                 style={styles.reviewCard}
                 onPress={() => {
                    const otherLogs = logs.filter(l => l.imageUrl && l.id !== randomLog.id);
-                   // 🌟 修正：傳遞 id
                    router.push({ pathname: '/log', params: { id: otherLogs[0].id } })
                 }}
               >
@@ -250,7 +251,7 @@ export default function HomeScreen() {
                   </View>
                   <View style={styles.reviewLocationContainer}>
                      <Ionicons name="location-outline" size={12} color={colors.white} />
-                     <Text style={styles.reviewLocationText}>{logs.filter(l => l.imageUrl && l.id !== randomLog.id)[0].location || '秘密基地'}</Text>
+                     <Text style={styles.reviewLocationText} numberOfLines={1}>{logs.filter(l => l.imageUrl && l.id !== randomLog.id)[0].location || '秘密基地'}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -264,7 +265,6 @@ export default function HomeScreen() {
       <Modal visible={isPickerVisible} transparent={true} animationType="fade">
         <View style={styles.modalContainer}>
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsPickerVisible(false)} />
-          {/* 🌟 修正：把白色背景加回來，輪盤就不會變透明了！ */}
           <View style={[styles.pickerCard, { backgroundColor: colors.pickerBg }]}>
             <View style={styles.pickerColumn}>
               <View style={styles.selectionHighlight} pointerEvents="none" />
@@ -338,8 +338,8 @@ const StatsCard = ({ label, value, unit }) => (
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingTop: 60, paddingHorizontal: 25, paddingBottom: 15 },
-  logoText: { fontSize: 20, fontWeight: 'bold', color: colors.text },
+  // 🌟 修改 1：拿掉頂部多餘的推擠
+  header: { paddingTop: 50, paddingHorizontal: 25, paddingBottom: 15 },
   content: { flex: 1 },
   
   statsSection: { paddingHorizontal: 25, marginBottom: 25 },
@@ -353,6 +353,7 @@ const styles = StyleSheet.create({
   
   calendarWrapper: { paddingHorizontal: 25, marginBottom: 30 },
   monthHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  // 🌟 修改 2：統一大標題為 18
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   monthSelector: { flexDirection: 'row', alignItems: 'center' },
   monthBadge: { backgroundColor: colors.secondary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, marginHorizontal: 8 }, 
@@ -377,7 +378,8 @@ const styles = StyleSheet.create({
   
   reviewSection: { paddingLeft: 25, marginBottom: 20 },
   reviewScrollContent: { paddingRight: 25, marginTop: 15 },
-  reviewCard: { width: 150, height: 180, borderRadius: 15, overflow: 'hidden', marginRight: 15, backgroundColor: colors.white },
+  // 🌟 修改 3：寬度從 150 微調為 165
+  reviewCard: { width: 165, height: 180, borderRadius: 15, overflow: 'hidden', marginRight: 15, backgroundColor: colors.white },
   reviewImage: { width: '100%', height: '100%' },
   reviewOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'space-between', padding: 10, backgroundColor: 'rgba(0,0,0,0.1)' },
   reviewDateBadge: { backgroundColor: colors.white, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start', alignItems: 'center' },
@@ -386,9 +388,10 @@ const styles = StyleSheet.create({
   
   reviewStarBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: 'transparent' },
   
-  reviewLocationContainer: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' },
-  reviewLocationText: { color: colors.white, fontSize: 10, fontWeight: 'bold', marginLeft: 2 },
-  emptyReviewCard: { width: 150, height: 180, borderRadius: 15, backgroundColor: colors.secondary, justifyContent: 'center', alignItems: 'center' },
+  reviewLocationContainer: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingRight: 10 },
+  reviewLocationText: { color: colors.white, fontSize: 10, fontWeight: 'bold', marginLeft: 2, flex: 1 },
+  // 🌟 修改 3：空卡片寬度也對齊 165
+  emptyReviewCard: { width: 165, height: 180, borderRadius: 15, backgroundColor: colors.secondary, justifyContent: 'center', alignItems: 'center' },
 
   tabBarWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'transparent' },
   tabBar: { flexDirection: 'row', height: 85, backgroundColor: colors.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: 0.05, shadowRadius: 10, paddingHorizontal: 15 },
