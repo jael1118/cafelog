@@ -342,6 +342,7 @@ export default function MapScreen() {
             onChangeText={handleSearch}
             onSubmitEditing={handleSearchSubmit}
             returnKeyType="search"
+            onFocus={() => setIsSearchListVisible(true)}
           />
           {/* 🌟 修改3：加上「叉叉」按鈕，只有在搜尋框有字的時候才顯示 */}
           {searchText.length > 0 && (
@@ -376,6 +377,7 @@ export default function MapScreen() {
                     latitudeDelta: 0.01,
                     longitudeDelta: 0.01
                   }, 800);
+                  Keyboard.dismiss();
                 }}>
                   <Ionicons name="location-outline" size={20} color={colors.primary} style={{ marginRight: 10 }} />
                   <View style={{ flex: 1 }}>

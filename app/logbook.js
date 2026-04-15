@@ -3,6 +3,9 @@ import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, TextInput, Moda
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StatusBar } from 'react-native';
+import { Stack } from 'expo-router';
+// 🌟 因為不用它算距離了，所以 insets 的引入可以拿掉
 
 const colors = {
   primary: '#FCA5F1',         
@@ -15,7 +18,8 @@ const colors = {
   white: '#FFFFFF',
 };
 
-const dotPattern = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAMklEQVR42mP8z8BQz0AEYBxVSF+F/9HwGA0PUhQMDHQjmkAIAAAXGxE/yFw5fwAAAABJRU5ErkJggg==';
+// 🌟 未來你想換背景圖，把這裡的網址改成 require('../assets/你的圖片.png') 就可以了
+const backgroundUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAMklEQVR42mP8z8BQz0AEYBxVSF+F/9HwGA0PUhQMDHQjmkAIAAAXGxE/yFw5fwAAAABJRU5ErkJggg==';
 
 export default function LogbookScreen() {
   const router = useRouter();
@@ -80,7 +84,6 @@ export default function LogbookScreen() {
         activeOpacity={0.9}
         onPress={() => router.push({ pathname: '/log', params: { id: item.id } })}
       >
-        {/* 🌟 左側圖片區塊（含日期、地點、星等） */}
         <View style={styles.cardImageWrapper}>
           <ImageBackground source={{ uri: item.imageUrl || 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=300&auto=format&fit=crop' }} style={styles.cardImage}>
             <View style={styles.imageOverlay}>
@@ -104,12 +107,9 @@ export default function LogbookScreen() {
           </ImageBackground>
         </View>
 
-        {/* 🌟 右側文字區塊（含標題、編輯圖示、筆記、標籤） */}
         <View style={styles.cardTextWrapper}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-            {/* 編輯小圖示 */}
-            
           </View>
           <Text style={styles.cardNote} numberOfLines={3}>{item.note || '沒有留下筆記...'}</Text>
           
@@ -127,9 +127,11 @@ export default function LogbookScreen() {
   const displayTitle = filterDate ? `${filterDate.split('-')[0]}年${parseInt(filterDate.split('-')[1])}月${parseInt(filterDate.split('-')[2])}日` : '紀錄本';
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ImageBackground source={{ uri: dotPattern }} style={{ flex: 1 }} resizeMode="repeat" imageStyle={{ opacity: 0.25, tintColor: '#CBB5F5' }}>
-        
+    // 🌟 拿掉動態計算，回歸最單純的樣式
+    <View style={styles.container}>
+      <ImageBackground source={{ uri: backgroundUrl }} style={{ flex: 1 }} resizeMode="repeat" imageStyle={{ opacity: 0.25, tintColor: '#CBB5F5' }}>
+       <Stack.Screen options={{ headerShown: false, headerTransparent: true }} />
+              
         <View style={styles.header}>
           {filterDate && (
              <TouchableOpacity style={{ marginRight: 15 }} onPress={() => router.back()}>
@@ -216,18 +218,19 @@ export default function LogbookScreen() {
           </View>
         )}
       </ImageBackground>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 25, paddingTop: 40, paddingBottom: 15 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 25, paddingTop: 30, paddingBottom: 15 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   toolbarRow: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 15 },
-  searchPill: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.85)', borderColor: colors.secondary, borderWidth: 1, borderRadius: 25, paddingHorizontal: 15, height: 40, marginRight: 10 },
-  // 🌟 修正搜尋框字體往下偏移：加上 textAlignVertical: 'center'
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: colors.text, includeFontPadding: false, textAlignVertical: 'center',height: '100%', alignSelf: 'center',marginBottom: 8, },
+  searchPill: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.85)', borderColor: colors.secondary, borderWidth: 1, borderRadius: 25, paddingHorizontal: 15, height: 40, marginRight: 10 },
+  
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: colors.text, includeFontPadding: false, textAlignVertical: 'center', paddingBottom: 4 },
+  
   sortPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 25, paddingHorizontal: 18, height: 40, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
   sortText: { includeFontPadding: false, marginLeft: 5, fontSize: 14, color: colors.primaryText, fontWeight: 'bold' },
   listContent: { paddingHorizontal: 20, paddingBottom: 120 }, 
@@ -237,9 +240,21 @@ const styles = StyleSheet.create({
   emptyAddBtn: { flexDirection: 'row', backgroundColor: colors.primaryText, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 25, alignItems: 'center', elevation: 4 },
   emptyAddBtnText: { color: colors.white, fontWeight: 'bold', fontSize: 15 },
 
-  // 🌟 全新卡片樣式：符合截圖設計
-  cardContainer: { flexDirection: 'row', backgroundColor: colors.white, borderRadius: 20, marginBottom: 15, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, overflow: 'hidden', height: 160 },
-  cardImageWrapper: { width: 150, height: '100%' },
+  // 🌟 卡片升級：加上強烈的陰影，讓它浮出來的感覺更明顯
+  cardContainer: { 
+    flexDirection: 'row', 
+    backgroundColor: colors.white, 
+    borderRadius: 20, 
+    marginBottom: 18, // 稍微拉開距離讓陰影有空間
+    elevation: 8, // Android 陰影加強
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 8 }, // iOS 陰影往下掉一點
+    shadowOpacity: 0.15, // iOS 陰影變深一點
+    shadowRadius: 12, // iOS 陰影暈染範圍變大
+    overflow: 'hidden', 
+    height: 180, // 🌟 照片放大：高度從 160 調成 180
+  },
+  cardImageWrapper: { width: 160, height: '100%' }, // 🌟 照片放大：寬度從 150 調成 160
   cardImage: { flex: 1, resizeMode: 'cover' },
   imageOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.15)', justifyContent: 'space-between', padding: 12 },
   dateBadge: { backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, alignSelf: 'flex-start', alignItems: 'center' },
@@ -254,7 +269,6 @@ const styles = StyleSheet.create({
   cardTextWrapper: { flex: 1, padding: 15, justifyContent: 'space-between' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardTitle: { fontSize: 16, fontWeight: 'bold', color: colors.text, flex: 1, marginRight: 10 },
-  editIconWrapper: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   cardNote: { fontSize: 12, color: colors.grayText, lineHeight: 18, flex: 1, marginTop: 8 },
   
   cardTagsRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 },

@@ -3,6 +3,9 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, FlatList, SafeAre
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname, useFocusEffect } from 'expo-router'; 
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync();
 
 const colors = {
   primary: '#9B7ED9',         
@@ -23,7 +26,25 @@ const colors = {
 const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"];
 const ITEM_HEIGHT = 46;
 
-export default function HomeScreen() {
+export default function HomeScreen() { 
+  
+  // 🌟 3. 在元件裡加上這個 useEffect
+  useEffect(() => {
+    async function hideSplashScreen() {
+      try {
+        // 讓畫面停留 2 秒鐘 (2000毫秒)
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        // 時間到，把啟動畫面收起來，正式進入主頁！
+        await SplashScreen.hideAsync();
+      }
+    }
+
+    hideSplashScreen();
+  }, []);
+
   const router = useRouter();
   const pathname = usePathname();
 
