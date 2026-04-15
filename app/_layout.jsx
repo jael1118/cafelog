@@ -23,7 +23,6 @@ export default function RootLayout() {
           style={styles.splashImage} 
           resizeMode="contain" 
         />
-        <Text style={styles.splashText}>Cafe Log</Text>
       </View>
     );
   }
@@ -57,5 +56,4 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   splashContainer: { flex: 1, backgroundColor: '#F8F8FC', justifyContent: 'center', alignItems: 'center' },
   splashImage: { width: 160, height: 160, marginBottom: 20 },
-  splashText: { fontSize: 24, fontWeight: '900', color: '#9B7ED9', letterSpacing: 2 },
 });
