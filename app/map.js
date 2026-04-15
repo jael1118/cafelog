@@ -360,7 +360,7 @@ export default function MapScreen() {
             <View style={styles.searchListHeader}>
               <Text style={styles.searchListTitle}>搜尋結果 ({displayedCafes.length})</Text>
               <TouchableOpacity onPress={() => setIsSearchListVisible(false)}>
-                <Ionicons name="close-circle" size={24} color={colors.grayText} />
+                <Ionicons name="close" size={24} color={colors.grayText} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   loadingFull: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
 
-  searchContainer: { position: 'absolute', top: 60, left: 20, right: 20, flexDirection: 'row', backgroundColor: colors.white, borderRadius: 15, paddingHorizontal: 20, paddingVertical: 15, alignItems: 'center', justifyContent: 'space-between', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5 },
+  searchContainer: { position: 'absolute', top: 80, left: 20, right: 20, flexDirection: 'row', backgroundColor: colors.white, borderRadius: 15, paddingHorizontal: 20, paddingVertical: 15, alignItems: 'center', justifyContent: 'space-between', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5 },
   searchInput: { flex: 1, fontSize: 16, color: colors.text, marginRight: 10 },
 
   searchListContainer: { position: 'absolute', top: 120, left: 20, right: 20, maxHeight: 300, backgroundColor: colors.white, borderRadius: 15, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, zIndex: 20, overflow: 'hidden' },

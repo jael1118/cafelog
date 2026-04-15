@@ -3,9 +3,6 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, FlatList, SafeAre
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname, useFocusEffect } from 'expo-router'; 
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
-import * as SplashScreen from 'expo-splash-screen';
-
-SplashScreen.preventAutoHideAsync();
 
 const colors = {
   primary: '#9B7ED9',         
@@ -27,24 +24,17 @@ const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"];
 const ITEM_HEIGHT = 46;
 
 export default function HomeScreen() { 
-  
-  // 🌟 3. 在元件裡加上這個 useEffect
+
+  const [isShowSplash, setIsShowSplash] = useState(true);
+
+  // 🌟 2. 倒數 2 秒後，優雅地把啟動畫面關掉
   useEffect(() => {
-    async function hideSplashScreen() {
-      try {
-        // 讓畫面停留 2 秒鐘 (2000毫秒)
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } catch (e) {
-        console.warn(e);
-      } finally {
-        // 時間到，把啟動畫面收起來，正式進入主頁！
-        await SplashScreen.hideAsync();
-      }
-    }
-
-    hideSplashScreen();
+    const timer = setTimeout(() => {
+      setIsShowSplash(false);
+    }, 2000); 
+    return () => clearTimeout(timer);
   }, []);
-
+  
   const router = useRouter();
   const pathname = usePathname();
 
@@ -179,6 +169,7 @@ export default function HomeScreen() {
     );
   };
 
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* 🌟 修改 1：拿掉外層的固定 header，移到 ScrollView 裡面 */}
@@ -348,7 +339,6 @@ const StatsCard = ({ label, value, unit }) => (
   <View style={styles.statsCard}>
     <View style={styles.statsLabelRow}>
        <Text style={styles.statsLabel}>{label}</Text>
-       <Ionicons name="star-outline" size={14} color={colors.pickerText} />
     </View>
     <View style={styles.statsValueContainer}>
       <Text style={styles.statsValue}>{value}</Text>
@@ -360,7 +350,7 @@ const StatsCard = ({ label, value, unit }) => (
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   // 🌟 修改 1：拿掉頂部多餘的推擠
-  header: { paddingTop: 50, paddingHorizontal: 25, paddingBottom: 15 },
+  header: { paddingTop: 20, paddingHorizontal: 25, paddingBottom: 15 },
   content: { flex: 1 },
   
   statsSection: { paddingHorizontal: 25, marginBottom: 25 },

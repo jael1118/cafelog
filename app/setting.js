@@ -108,7 +108,7 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 25, paddingBottom: 10, paddingTop: 20 }, // 配合 insets 微調
+  header: { paddingHorizontal: 25, paddingBottom: 10, paddingTop: 80 }, // 配合 insets 微調
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   content: { flex: 1 },
   

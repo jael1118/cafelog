@@ -5,7 +5,6 @@ import { useRouter, usePathname, useFocusEffect, useLocalSearchParams } from 'ex
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'react-native';
 import { Stack } from 'expo-router';
-// 🌟 因為不用它算距離了，所以 insets 的引入可以拿掉
 
 const colors = {
   primary: '#FCA5F1',         
@@ -22,6 +21,10 @@ const colors = {
 const backgroundUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAMklEQVR42mP8z8BQz0AEYBxVSF+F/9HwGA0PUhQMDHQjmkAIAAAXGxE/yFw5fwAAAABJRU5ErkJggg==';
 
 export default function LogbookScreen() {
+  const params = useLocalSearchParams();
+  // 🌟 2. 判斷網址裡面有沒有 filterDate（如果有，代表是從日曆點進來的）
+  const isFromCalendar = !!params.filterDate;
+
   const router = useRouter();
   const pathname = usePathname();
   
@@ -129,6 +132,12 @@ export default function LogbookScreen() {
   return (
     // 🌟 拿掉動態計算，回歸最單純的樣式
     <View style={styles.container}>
+      <Stack.Screen 
+        options={{ 
+          // 如果是從日曆來的 -> 從右滑入；如果是從下方 Tab 來的 -> 無動畫瞬切
+          animation: isFromCalendar ? 'slide_from_right' : 'none' 
+        }} 
+      />
       <ImageBackground source={{ uri: backgroundUrl }} style={{ flex: 1 }} resizeMode="repeat" imageStyle={{ opacity: 0.25, tintColor: '#CBB5F5' }}>
        <Stack.Screen options={{ headerShown: false, headerTransparent: true }} />
               
@@ -224,7 +233,7 @@ export default function LogbookScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 25, paddingTop: 30, paddingBottom: 15 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 25, paddingTop: 80, paddingBottom: 15 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   toolbarRow: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 15 },
   searchPill: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.85)', borderColor: colors.secondary, borderWidth: 1, borderRadius: 25, paddingHorizontal: 15, height: 40, marginRight: 10 },
@@ -235,7 +244,7 @@ const styles = StyleSheet.create({
   sortText: { includeFontPadding: false, marginLeft: 5, fontSize: 14, color: colors.primaryText, fontWeight: 'bold' },
   listContent: { paddingHorizontal: 20, paddingBottom: 120 }, 
   
-  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 },
+  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 0 },
   emptyText: { color: colors.grayText, fontSize: 16, fontWeight: 'bold', marginBottom: 20 },
   emptyAddBtn: { flexDirection: 'row', backgroundColor: colors.primaryText, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 25, alignItems: 'center', elevation: 4 },
   emptyAddBtnText: { color: colors.white, fontWeight: 'bold', fontSize: 15 },
