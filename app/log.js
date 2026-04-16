@@ -5,15 +5,15 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const colors = {
-  primary: '#FCA5F1',         
-  secondary: '#EBE5F5',       
+  primary: '#FBAFFE',         
+  secondary: '#E2E0F9',       
   background: '#FFFFFF',      
   text: '#4A4A4A',            
   grayText: '#888888',        
   white: '#FFFFFF',
-  heartActive: '#D0C0ED',     
+  heartActive: '#FCA5F1',     
   heart: '#E0E0E0',           
-  primaryText: '#9B7ED9',     
+  primaryText: '#A078D2',     
 };
 
 export default function SingleLogScreen() {

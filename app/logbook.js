@@ -7,14 +7,15 @@ import { StatusBar } from 'react-native';
 import { Stack } from 'expo-router';
 
 const colors = {
-  primary: '#FCA5F1',         
-  secondary: '#EBE5F5',       
+  primary: '#FBAFFE',         
+  secondary: '#E2E0F9',       
   background: '#F8F8FC',      
   text: '#4A4A4A',            
   grayText: '#888888',        
-  primaryText: '#9B7ED9',     
-  heart: '#FCA5F1',           
+  primaryText: '#A078D2',     
+  heart: '#FBAFFE',           
   white: '#FFFFFF',
+  tabbg: '#E7D7FB'
 };
 
 // 🌟 未來你想換背景圖，把這裡的網址改成 require('../assets/你的圖片.png') 就可以了
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
   toolbarRow: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 15 },
   searchPill: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.85)', borderColor: colors.secondary, borderWidth: 1, borderRadius: 25, paddingHorizontal: 15, height: 40, marginRight: 10 },
   
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: colors.text, includeFontPadding: false, textAlignVertical: 'center', paddingBottom: 4 },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: colors.text, includeFontPadding: false, textAlignVertical: 'center', },
   
   sortPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 25, paddingHorizontal: 18, height: 40, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
   sortText: { includeFontPadding: false, marginLeft: 5, fontSize: 14, color: colors.primaryText, fontWeight: 'bold' },
@@ -294,7 +295,7 @@ const styles = StyleSheet.create({
   tabBarWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'transparent' },
   tabBar: { flexDirection: 'row', height: 85, backgroundColor: colors.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, elevation: 15, paddingHorizontal: 15 },
   tabItem: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 15 },
-  tabItemActiveBg: { backgroundColor: colors.secondary, width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginTop: -8, marginBottom: 2 },
+  tabItemActiveBg: { backgroundColor: colors.tabbg, width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginTop: -8, marginBottom: 2 },
   tabText: { fontSize: 10, color: colors.grayText, marginTop: 4, fontWeight: 'bold' },
   tabTextActive: { color: colors.primaryText }
 });

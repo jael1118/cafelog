@@ -5,13 +5,13 @@ import { useRouter, usePathname, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
 
 const colors = {
-  primary: '#9B7ED9',         
-  secondary: '#EBE5F5',       
+  primary: '#A078D2',         
+  secondary: '#E7D7FB',       
   background: '#F8F8FC',      
-  text: '#4A4A4A',            
+  text: '#574B54',            
   grayText: '#888888',        
   white: '#FFFFFF',
-  pastDateBg: '#F0F0F5',      
+  pastDateBg: '#F6F1FD',      
   pastDateText: '#C0C0C0',    
   
   pickerBg: '#FFFFFF',        
@@ -357,17 +357,17 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
   statsCard: { backgroundColor: colors.white, borderRadius: 20, padding: 15, width: '31%', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 },
   statsLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  statsLabel: { fontSize: 13, color: colors.text, fontWeight: 'bold' },
+  statsLabel: { fontSize: 12, color: colors.text, fontWeight: 'bold' },
   statsValueContainer: { flexDirection: 'row', alignItems: 'baseline' },
-  statsValue: { fontSize: 28, fontWeight: 'bold', color: colors.primary }, 
-  statsUnit: { fontSize: 12, color: colors.text, marginLeft: 2 },
+  statsValue: { fontSize: 36, fontWeight: 'bold', color: colors.primary }, 
+  statsUnit: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginLeft: 6 },
   
   calendarWrapper: { paddingHorizontal: 25, marginBottom: 30 },
   monthHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   // 🌟 修改 2：統一大標題為 18
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   monthSelector: { flexDirection: 'row', alignItems: 'center' },
-  monthBadge: { backgroundColor: colors.secondary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, marginHorizontal: 8 }, 
+  monthBadge: { backgroundColor: colors.secondary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 5, marginHorizontal: 8 }, 
   monthLabel: { fontSize: 13, fontWeight: 'bold', color: colors.text },
   
   calendarContainer: { backgroundColor: colors.white, borderRadius: 25, padding: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 },
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
   modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.05)' },
   pickerCard: { flexDirection: 'row', borderRadius: 25, width: '85%', height: ITEM_HEIGHT * 3, paddingHorizontal: 10, elevation: 8, overflow: 'hidden' },
   pickerColumn: { flex: 1, height: '100%', position: 'relative' },
-  selectionHighlight: { position: 'absolute', top: ITEM_HEIGHT, left: 10, right: 10, height: ITEM_HEIGHT, borderRadius: 20 },
+  selectionHighlight: { backgroundColor:colors.pickerHighlight, position: 'absolute', top: ITEM_HEIGHT, left: 10, right: 10, height: ITEM_HEIGHT, borderRadius: 20 },
   pickerItem: { height: ITEM_HEIGHT, width: '100%', alignItems: 'center', justifyContent: 'center' },
   pickerItemText: { fontSize: 18, fontWeight: 'bold' },
 });

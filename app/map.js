@@ -7,8 +7,8 @@ import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const colors = {
-  primary: '#9B7ED9',
-  secondary: '#EBE5F5',
+  primary: '#A078D2',
+  secondary: '#E7D7FB',
   background: '#F8F8FC',
   text: '#4A4A4A',
   grayText: '#888888',

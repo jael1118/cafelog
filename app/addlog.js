@@ -6,21 +6,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 
 const colors = {
-  primary: '#FCA5F1',         
-  secondary: '#EBE5F5',       
+  primary: '#FBAFFE',         
+  secondary: '#E2E0F9',       
   background: '#F8F8FC',      
   text: '#666666',            
   grayText: '#A0A0A0',        
   white: '#FFFFFF',
   heart: '#E0E0E0',           
-  heartActive: '#D0C0ED',     
-  tagText: '#9B7ED9',         
+  heartActive: '#FCA5F1',     
+  tagText: '#A078D2',
+  title:'#9C8396',         
   
   pickerBg: '#FFFFFF',        
   pickerHighlight: '#EBE5F5', 
   pickerText: '#D0C0ED',      
   pickerTextSelected: '#9B7ED9',
-  primaryText: '#9B7ED9',     
+  primaryText: '#A078D2',     
 };
 
 const ITEM_HEIGHT = 40;
@@ -511,7 +512,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 25, paddingTop: 15 },
   
   topNavRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-  timeText: { fontSize: 12, color: colors.primaryText, fontWeight: '600' },
+  timeText: { fontSize: 12, color: colors.primaryText, alignItems: 'center', justifyContent: 'center', fontWeight: '600',paddingLeft:30 },
   doneButton: { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   doneButtonText: { color: colors.white, fontSize: 13, fontWeight: 'bold' },
 

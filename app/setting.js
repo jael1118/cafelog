@@ -8,13 +8,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // 🌟 全面套用治癒系紫羅蘭/粉色系配色
 const colors = {
-  primary: '#9B7ED9',         // 深紫 (導覽列選中狀態)
-  secondary: '#EBE5F5',       // 淺紫 (導覽列選中背景)
+  primary: '#A078D2',         // 深紫 (導覽列選中狀態)
+  secondary: '#E7D7FB',       // 淺紫 (導覽列選中背景)
   background: '#F8F8FC',      // 極淺灰紫底色
   text: '#5D4037',            // 深棕色 (標題與名稱)
   grayText: '#888888',        // 次要灰色
   white: '#FFFFFF',
-  accentPink: '#FCA5F1',      // 編輯按鈕的粉紅
+  accentPink: '#FBAFFE',      // 編輯按鈕的粉紅
   avatarBg: '#8A8482'         // 質感灰色頭像底色
 };
 
