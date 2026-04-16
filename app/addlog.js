@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, Image, Modal, Keyboard, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router'; 
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -9,8 +9,8 @@ const colors = {
   primary: '#FBAFFE',         
   secondary: '#E2E0F9',       
   background: '#F8F8FC',      
-  text: '#666666',            
-  grayText: '#A0A0A0',        
+  text: '#4A4A4A',            
+  grayText: '#888888',        
   white: '#FFFFFF',
   heart: '#E0E0E0',           
   heartActive: '#FCA5F1',     
@@ -27,6 +27,12 @@ const colors = {
 const ITEM_HEIGHT = 40;
 
 export default function AddLogScreen() {
+  const params = useLocalSearchParams();
+  
+  // 🌟 判斷現在是「編輯模式」還是「新增模式」
+  // 通常從詳細頁點過來編輯，你會傳遞這篇紀錄的 id，對吧？
+  // (如果你的參數名稱不叫 id，請換成你實際傳遞的參數)
+  const isEditMode = !!params.id; 
   const router = useRouter();
   const { editLogData, prefillLocation } = useLocalSearchParams(); 
 
@@ -299,6 +305,15 @@ export default function AddLogScreen() {
       style={{ flex: 1, backgroundColor: colors.white }}
     >
       <SafeAreaView style={styles.container}>
+      {/* 🌟 核心魔法：根據模式切換不同的進場動畫！ */}
+      <Stack.Screen 
+        options={{ 
+          // 如果是編輯，就用淡入淡出(原地變身)；如果是新增，就從下面彈上來！
+          animation: isEditMode ? 'slide_from_bottom' : 'fade',
+          // 讓 fade 動畫稍微快一點，手感更俐落
+          animationDuration: 150 
+        }} 
+      />
         <ScrollView style={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           
           <View style={styles.topNavRow}>
@@ -549,7 +564,7 @@ const styles = StyleSheet.create({
   toolbarBtn: { padding: 10, marginRight: 5 },
 
   modalContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.1)' },
+  modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.2)' },
   pickerCard: { flexDirection: 'row', borderRadius: 25, width: '95%', height: ITEM_HEIGHT * 3, paddingHorizontal: 5, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, overflow: 'hidden', zIndex: 1 },
   pickerColumn: { flex: 1, height: '100%', position: 'relative' },
   selectionHighlight: { position: 'absolute', top: ITEM_HEIGHT, left: 2, right: 2, height: ITEM_HEIGHT, borderRadius: 20 },

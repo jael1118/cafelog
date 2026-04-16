@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, ImageBackground, View, TouchableOpacity, SafeAreaView, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -65,10 +65,13 @@ export default function SingleLogScreen() {
   return (
     <SafeAreaView style={styles.container}>
       
+      {/* 🌟 引入圖片並當作背景 */}
+      {/* 🌟 終極殺手鐧：放棄 ImageBackground，改用普通 View 包裝 */}
       <View style={styles.topNavRow}>
+        
+        {/* 🌟 2. 你的按鈕跟文字 (排在圖片後面，就會自動疊在圖片上方) */}
         <TouchableOpacity onPress={() => router.back()}>
-          {/* 🌟 關鍵修改：把 close 換成 chevron-back */}
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
+          <Ionicons name="close" size={28} color={colors.text} />
         </TouchableOpacity>
         
         <Text style={styles.timeText}>{logData.displayTime || logData.date}</Text>
@@ -79,6 +82,7 @@ export default function SingleLogScreen() {
         >
           <Ionicons name="pencil" size={16} color={colors.white} />
         </TouchableOpacity>
+        
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
@@ -149,8 +153,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
   backBtnFallback: { marginTop: 20, backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
 
-  topNavRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 25, paddingTop: 10, marginBottom: 25 },
-  timeText: { fontSize: 12, color: colors.primaryText, fontWeight: '600' },
+  topNavRow: { overflow: 'hidden', width: '100%',height: 60, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 25, paddingTop: 15, marginBottom: 25 },
+  timeText: { fontSize: 12, color: colors.primaryText, fontWeight: '600' ,justifyContent: 'center'},
   editBtn: { backgroundColor: colors.primary, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3 },
 
   mainInfoContainer: { flexDirection: 'row', alignItems: 'stretch', marginBottom: 25 },

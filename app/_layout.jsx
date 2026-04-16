@@ -50,8 +50,21 @@ export default function RootLayout() {
         name="setting" 
         options={{ animation: 'fade', animationDuration: 150 }} 
       />
+      {/* 🌟 在大總管這邊，利用 route 參數「提早」決定要哪種視窗！ */}
+      <Stack.Screen 
+        name="addlog" 
+        options={({ route }) => ({ 
+          // 如果傳進來的參數有 id，代表是「編輯」 -> 給他卡片 (modal)
+          // 如果沒有 id，代表是「新增」 -> 給他全螢幕 (fullScreenModal)
+          presentation: route.params?.id ? 'modal' : 'fullScreenModal',
+          
+          // 動畫也一起在這裡判斷
+          animation: route.params?.id ? 'fade' : 'slide_from_bottom',
+          animationDuration: 150 
+        })} 
+      />
         <Stack.Screen 
-          name="addlog" 
+          name="log" 
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }} 
         />
       </Stack>

@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   toolbarRow: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 15 },
   searchPill: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.85)', borderColor: colors.secondary, borderWidth: 1, borderRadius: 25, paddingHorizontal: 15, height: 40, marginRight: 10 },
   
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: colors.text, includeFontPadding: false, textAlignVertical: 'center', },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: colors.text, includeFontPadding: false, textAlignVertical: 'center', paddingBottom:4},
   
   sortPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 25, paddingHorizontal: 18, height: 40, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
   sortText: { includeFontPadding: false, marginLeft: 5, fontSize: 14, color: colors.primaryText, fontWeight: 'bold' },

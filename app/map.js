@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Alert, Image, Linking, FlatList } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Alert, Image, Linking, FlatList, Animated } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname, useFocusEffect } from 'expo-router';
@@ -47,48 +47,65 @@ let globalSavedRegion = null;
 let globalSavedCafes = [];
 
 const CafeMarker = ({ cafe, isSelected, isVisited, count, onPress }) => {
-  // 🌟 核心修改：我們不用固定的 false，而是讓它在選中/未選中切換時，多給它一點時間重繪
+  // 🌟 1. 準備動畫變數與重繪開關
+  const scaleAnim = useRef(new Animated.Value(1)).current;
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
 
+  // 🌟 2. 剛載入地圖時，給它一點時間畫出圖標，然後關閉重繪以保持滑動順暢
   useEffect(() => {
-    setTracksViewChanges(true); // 只要狀態改變，就立刻開啟重繪追蹤
-    
-    // 給予更充裕的重繪時間 (1.5秒)，確保手機有足夠時間把新的大圖標畫出來
-    // 之後再關閉以保持地圖滑動順暢
-    const timer = setTimeout(() => {
-      setTracksViewChanges(false);
-    }, 1); 
-    
+    const timer = setTimeout(() => setTracksViewChanges(false), 500);
     return () => clearTimeout(timer);
-  }, [isSelected]); // 監聽 isSelected，當它被點擊或取消時觸發
+  }, []);
+
+  // 🌟 3. 監聽點擊狀態的改變
+  useEffect(() => {
+    if (isSelected) {
+      // 【被選中時】開啟重繪 -> 縮小到 0.3 -> 彈回 1 -> 關閉重繪
+      setTracksViewChanges(true);
+      scaleAnim.setValue(0.3);
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 4,
+        tension: 100,
+        useNativeDriver: false, // ⚠️ 在地圖圖標動畫中，關閉原生驅動反而能確保每一幀都被印到地圖上！
+      }).start(() => {
+        setTimeout(() => setTracksViewChanges(false), 100);
+      });
+    } else {
+      // 【被取消選中時】開啟重繪 -> 讓它變回普通小圖標 -> 關閉重繪
+      setTracksViewChanges(true);
+      setTimeout(() => setTracksViewChanges(false), 100);
+    }
+  }, [isSelected]);
 
   return (
     <Marker 
-      // 🌟 核心修改 2：把 key 改回最單純的 id。
-      // 因為我們已經用 tracksViewChanges 控制重繪了，再把 isSelected 塞進 key 會導致元件被強制摧毀重建，
-      // 這反而就是圖標會「瞬間消失」的元兇！
       key={cafe.id} 
       coordinate={{ latitude: cafe.lat, longitude: cafe.lng }}
       onPress={onPress}
       style={{ zIndex: isSelected ? 999 : 1 }}
-      tracksViewChanges={tracksViewChanges} // 綁定狀態
+      tracksViewChanges={tracksViewChanges}
     >
+      {/* 🌟 1. 結界（外框）：給地圖看的！固定 50x50，絕對不加動畫 */}
       <View style={{ width: 50, height: 50, alignItems: 'center', justifyContent: 'center' }}>
-        {isSelected ? (
-          <Ionicons 
-            name="location"
-            size={46}
-            color={colors.primary}
-          />
-        ) : isVisited ? (
-          <View style={styles.visitedMarker}>
-            <Text style={styles.visitCountText}>{count}</Text>
-          </View>
-        ) : (
-          <View style={styles.unvisitedMarker}>
-            <Ionicons name="cafe" size={14} color={colors.primary} />
-          </View>
-        )}
+        
+        {/* 🌟 2. 動畫層：給使用者看的！被關在結界裡面，不管怎麼彈都不會飛走 */}
+        <Animated.View style={{ 
+          transform: isSelected ? [{ scale: scaleAnim }] : [] 
+        }}>
+          {isSelected ? (
+            <Ionicons name="location" size={46} color={colors.primary} />
+          ) : isVisited ? (
+            <View style={styles.visitedMarker}>
+              <Text style={styles.visitCountText}>{count}</Text>
+            </View>
+          ) : (
+            <View style={styles.unvisitedMarker}>
+              <Ionicons name="cafe" size={14} color={colors.primary} />
+            </View>
+          )}
+        </Animated.View>
+
       </View>
     </Marker>
   );
@@ -129,10 +146,26 @@ export default function MapScreen() {
               if (log.location) {
                 const locName = log.location.toLowerCase().trim();
                 if (!data[locName]) {
-                  data[locName] = { count: 0, rating: log.rating || 0 };
+                  // 初始化計數器、總分、Tag 陣列
+                  data[locName] = { count: 0, totalRating: 0, tags: [] };
                 }
                 data[locName].count += 1;
+                data[locName].totalRating += Number(log.rating) || 0;
+                
+                // 收集自己打的 Tag (假設是用空白分隔)
+                if (log.tags) {
+                  const tagArray = log.tags.split(' ').filter(t => t.trim() !== '');
+                  data[locName].tags.push(...tagArray);
+                }
               }
+            });
+
+            // 2. 結算平均分數與過濾重複的 Tag
+            Object.keys(data).forEach(key => {
+              // 算平均
+              data[key].averageRating = data[key].count > 0 ? (data[key].totalRating / data[key].count) : 0;
+              // 去除重複的 Tag，並最多只取前 3 個顯示以免版面爆掉
+              data[key].tags = [...new Set(data[key].tags)].slice(0, 3);
             });
             setVisitData(data);
           }
@@ -274,8 +307,10 @@ export default function MapScreen() {
 
   const selectedVData = selectedCafe ? visitData[selectedCafe.name.toLowerCase().trim()] : null;
   const isSelectedVisited = selectedVData && selectedVData.count > 0;
-  const selectedUserRating = selectedVData ? selectedVData.rating : 0;
-
+  // 🌟 改用剛算好的平均分數
+  const selectedUserRating = selectedVData ? selectedVData.averageRating : 0;
+  // 🌟 抓出自己的 Tag
+  const displayTags = isSelectedVisited ? selectedVData.tags : [];
   return (
     <TouchableWithoutFeedback onPress={() => {
       Keyboard.dismiss();
@@ -320,6 +355,16 @@ export default function MapScreen() {
                     e.stopPropagation();
                     setSelectedCafeId(cafe.id);
                     setIsSearchListVisible(false);
+                    mapRef.current?.animateToRegion({
+                      // 💡 貼心微調：緯度 (latitude) 稍微減去 0.003
+                      // 這會讓地圖中心點偏下，確保你的圖標會完美出現在畫面「偏上方」
+                      // 完全不會被下方的「白色資訊卡片」擋住！
+                      latitude: cafe.lat, 
+                      longitude: cafe.lng,
+                      // 維持使用者當前的縮放比例，不要突然放大或縮小
+                      latitudeDelta: currentMapRegion?.latitudeDelta || 0.01,
+                      longitudeDelta: currentMapRegion?.longitudeDelta || 0.01
+                    }, 500); // 500 毫秒的滑動時間，手感最滑順
                   }}
                 />
               );
@@ -359,9 +404,6 @@ export default function MapScreen() {
           <View style={styles.searchListContainer}>
             <View style={styles.searchListHeader}>
               <Text style={styles.searchListTitle}>搜尋結果 ({displayedCafes.length})</Text>
-              <TouchableOpacity onPress={() => setIsSearchListVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.grayText} />
-              </TouchableOpacity>
             </View>
             <FlatList
               data={displayedCafes}
@@ -445,13 +487,15 @@ export default function MapScreen() {
                   <Text style={styles.detailText} numberOfLines={1}>{selectedCafe.businessHours}</Text>
                 </View>
 
-                <View style={styles.tagsContainer}>
-                  {selectedCafe.tags.map((tag, index) => (
-                    <View key={index} style={styles.tagBadge}>
-                      <Text style={styles.tagText}>{tag}</Text>
-                    </View>
-                  ))}
-                </View>
+                {isSelectedVisited && displayTags.length > 0 && (
+                  <View style={styles.tagsContainer}>
+                    {displayTags.map((tag, index) => (
+                      <View key={index} style={styles.tagBadge}>
+                        <Text style={styles.tagText}>{tag}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
 
                 <View style={styles.actionButtonRow}>
                   <TouchableOpacity style={[styles.actionButton, styles.mapButton]} onPress={() => openGoogleMaps(selectedCafe)}>
@@ -512,7 +556,7 @@ const styles = StyleSheet.create({
   searchContainer: { position: 'absolute', top: 80, left: 20, right: 20, flexDirection: 'row', backgroundColor: colors.white, borderRadius: 15, paddingHorizontal: 20, paddingVertical: 15, alignItems: 'center', justifyContent: 'space-between', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5 },
   searchInput: { flex: 1, fontSize: 16, color: colors.text, marginRight: 10 },
 
-  searchListContainer: { position: 'absolute', top: 120, left: 20, right: 20, maxHeight: 300, backgroundColor: colors.white, borderRadius: 15, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, zIndex: 20, overflow: 'hidden' },
+  searchListContainer: { position: 'absolute', top: 135, left: 20, right: 20, maxHeight: 300, backgroundColor: colors.white, borderRadius: 15, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, zIndex: 20, overflow: 'hidden' },
   searchListHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: colors.secondary },
   searchListTitle: { fontSize: 14, fontWeight: 'bold', color: colors.text },
   searchListItem: { flexDirection: 'row', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#F8F8FC' },
@@ -548,12 +592,12 @@ const styles = StyleSheet.create({
   tagBadge: { backgroundColor: colors.secondary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginRight: 6, marginBottom: 6 },
   tagText: { color: colors.primary, fontSize: 10, fontWeight: 'bold' },
 
-  actionButtonRow: { flexDirection: 'row', justifyContent: 'flex-start', marginTop: 'auto' },
-  actionButton: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 15, marginRight: 8 },
-  mapButton: { backgroundColor: '#F0F0F0' },
+  actionButtonRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 'auto' },
+  actionButton: { paddingVertical: 8, borderRadius: 15, flex: 1, alignItems: 'center', justifyContent: 'center' },
+  mapButton: { backgroundColor: '#F0F0F0', marginRight: 10 }, // 加個右邊距分開兩顆按鈕
   logButton: { backgroundColor: colors.primary },
-  mapButtonText: { color: colors.text, fontWeight: 'bold', fontSize: 12 },
-  logButtonText: { color: colors.white, fontWeight: 'bold', fontSize: 12 },
+  mapButtonText: { color: colors.text, fontWeight: 'bold', fontSize: 13 },
+  logButtonText: { color: colors.white, fontWeight: 'bold', fontSize: 13 },
 
   tabBarWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'transparent' },
   tabBar: { flexDirection: 'row', height: 85, backgroundColor: colors.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: 0.05, shadowRadius: 10, paddingHorizontal: 15 },

@@ -11,7 +11,7 @@ const colors = {
   primary: '#A078D2',         // 深紫 (導覽列選中狀態)
   secondary: '#E7D7FB',       // 淺紫 (導覽列選中背景)
   background: '#F8F8FC',      // 極淺灰紫底色
-  text: '#574B54',            // 深棕色 (標題與名稱)
+  text: '#4A4A4A',            // 深棕色 (標題與名稱)
   grayText: '#888888',        // 次要灰色
   white: '#FFFFFF',
   accentPink: '#FBAFFE',      // 編輯按鈕的粉紅

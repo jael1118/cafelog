@@ -8,11 +8,11 @@ const colors = {
   primary: '#A078D2',         
   secondary: '#E7D7FB',       
   background: '#F8F8FC',      
-  text: '#574B54',            
+  text: '#4A4A4A',            
   grayText: '#888888',        
   white: '#FFFFFF',
   pastDateBg: '#F6F1FD',      
-  pastDateText: '#C0C0C0',    
+  pastDateText: '#888888',    
   
   pickerBg: '#FFFFFF',        
   pickerHighlight: '#EBE5F5', 
@@ -377,9 +377,9 @@ const styles = StyleSheet.create({
   // 🌟 修改：卡片改窄一點 (165 -> 140)，比例更漂亮，一次能顯示更多
   reviewCard: { width: 250, height: 200, borderRadius: 15, overflow: 'hidden', marginRight: 15, backgroundColor: colors.white },  reviewImage: { width: '100%', height: '100%' },
   reviewOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'space-between', padding: 10, backgroundColor: 'rgba(0,0,0,0.1)' },
-  reviewDateBadge: { width: 40, height: 50, backgroundColor: colors.white, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start', alignItems: 'center' },
-  reviewDateMonth: { fontSize: 14, fontWeight: 'bold', color: colors.text, },
-  reviewDateDay: { fontSize: 20, fontWeight: '900', color: colors.text,  },
+  reviewDateBadge: { width: 50, height: 50, backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, alignSelf: 'flex-start', alignItems: 'center' },
+  reviewDateMonth: { fontSize: 10, fontWeight: 'bold', color: colors.text, },
+  reviewDateDay: { fontSize: 18, fontWeight: '900', color: colors.text,  },
   
   reviewStarBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: 'transparent' },
   
@@ -394,8 +394,8 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 10, color: colors.grayText, marginTop: 4, fontWeight: 'bold' },
   tabTextActive: { color: colors.primary },
 
-  modalContainer: { flex: 1, alignItems: 'center', paddingTop: 110 },
-  modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.05)' },
+  modalContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 80 },
+  modalOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.2)' },
   pickerCard: { flexDirection: 'row', borderRadius: 25, width: '85%', height: ITEM_HEIGHT * 3, paddingHorizontal: 10, elevation: 8, overflow: 'hidden' },
   pickerColumn: { flex: 1, height: '100%', position: 'relative' },
   selectionHighlight: { backgroundColor:colors.pickerHighlight, position: 'absolute', top: ITEM_HEIGHT, left: 10, right: 10, height: ITEM_HEIGHT, borderRadius: 20 },
