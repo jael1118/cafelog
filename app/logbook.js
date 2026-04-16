@@ -19,7 +19,7 @@ const colors = {
 };
 
 // 🌟 未來你想換背景圖，把這裡的網址改成 require('../assets/你的圖片.png') 就可以了
-const backgroundUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAMklEQVR42mP8z8BQz0AEYBxVSF+F/9HwGA0PUhQMDHQjmkAIAAAXGxE/yFw5fwAAAABJRU5ErkJggg==';
+const backgroundUrl = require('../assets/bg.png');
 
 export default function LogbookScreen() {
   const params = useLocalSearchParams();
@@ -135,11 +135,12 @@ export default function LogbookScreen() {
     <View style={styles.container}>
       <Stack.Screen 
         options={{ 
-          // 如果是從日曆來的 -> 從右滑入；如果是從下方 Tab 來的 -> 無動畫瞬切
-          animation: isFromCalendar ? 'slide_from_right' : 'none' 
+          // 🌟 從日曆來就右滑，從導覽列來就用極快的淡入淡出
+          animation: isFromCalendar ? 'slide_from_right' : 'fade',
+          animationDuration: 150 // 讓淡出的速度變快
         }} 
       />
-      <ImageBackground source={{ uri: backgroundUrl }} style={{ flex: 1 }} resizeMode="repeat" imageStyle={{ opacity: 0.25, tintColor: '#CBB5F5' }}>
+      <ImageBackground source={ backgroundUrl } style={{ flex: 1 }} resizeMode="repeat" imageStyle={{ opacity: 1, transform: [{ scale: 2 }] }}>
        <Stack.Screen options={{ headerShown: false, headerTransparent: true }} />
               
         <View style={styles.header}>
@@ -233,7 +234,7 @@ export default function LogbookScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: 'transparent'},
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 25, paddingTop: 80, paddingBottom: 15 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   toolbarRow: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 15 },
@@ -261,10 +262,16 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 }, // iOS 陰影往下掉一點
     shadowOpacity: 0.15, // iOS 陰影變深一點
     shadowRadius: 12, // iOS 陰影暈染範圍變大
-    overflow: 'hidden', 
     height: 180, // 🌟 照片放大：高度從 160 調成 180
   },
-  cardImageWrapper: { width: 160, height: '100%' }, // 🌟 照片放大：寬度從 150 調成 160
+  cardImageWrapper: { 
+    width: 170, 
+    height: '100%',
+    // 🌟 把裁切的工作交給照片的容器，而且只切左上跟左下，配合外層卡片的圓角
+    overflow: 'hidden',
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+  },
   cardImage: { flex: 1, resizeMode: 'cover' },
   imageOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.15)', justifyContent: 'space-between', padding: 12 },
   dateBadge: { backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, alignSelf: 'flex-start', alignItems: 'center' },

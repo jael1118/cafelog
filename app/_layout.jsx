@@ -1,59 +1,89 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Stack } from 'expo-router';
-import { View, Image, StyleSheet, StatusBar, Text } from 'react-native';
+// 🌟 1. 多引入 Animated 跟 StyleSheet
+import { View, Image, StyleSheet, StatusBar, Text, Animated } from 'react-native';
 
 export default function RootLayout() {
-  const [isShowSplash, setIsShowSplash] = useState(true);
+  const [isSplashUnmounted, setIsSplashUnmounted] = useState(false);
+  
+  // 🌟 2. 準備一個用來控制「透明度」的動畫變數，初始值為 1 (完全不透明)
+  const fadeAnim = useRef(new Animated.Value(1)).current; 
 
-  // 🌟 啟動畫面邏輯移到這裡：整個 App 週期只會執行這一次
   useEffect(() => {
+    // 讓啟動畫面停留 1.5 秒後，開始執行「淡出動畫」
     const timer = setTimeout(() => {
-      setIsShowSplash(false);
-    }, 2000);
+      Animated.timing(fadeAnim, {
+        toValue: 0,         // 目標透明度變成 0 (完全透明)
+        duration: 500,      // 動畫持續時間 500 毫秒 (0.5秒的漸層)
+        useNativeDriver: true, // 使用手機底層效能跑動畫，會更順
+      }).start(() => {
+        // 🌟 動畫跑完之後，才把這塊畫布真正從系統中卸載
+        setIsSplashUnmounted(true);
+      });
+    }, 1500); // 這裡可以微調，1500 + 500 = 剛好 2 秒
+
     return () => clearTimeout(timer);
-  }, []);
+  }, [fadeAnim]);
 
-  // 1. 顯示啟動畫面 (使用你的圖片)
-  if (isShowSplash) {
-    return (
-      <View style={styles.splashContainer}>
-        <StatusBar hidden={true} />
-        <Image 
-          source={require('../assets/icon.png')} 
-          style={styles.splashImage} 
-          resizeMode="contain" 
-        />
-      </View>
-    );
-  }
-
-  // 2. 正式進入 Stack 導航
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: '#F8F8FC' },
-        // 🌟 預設動畫：從右滑入 (給日期細節頁、紀錄詳情頁用)
-        animation: 'slide_from_right', 
-      }}
-    >
-      {/* 🌟 設定「底部按鈕」對應的分頁：切換時「不顯示動畫」 */}
-      <Stack.Screen name="index" options={{ animation: 'none' }} />
-      <Stack.Screen name="map" options={{ animation: 'none' }} />
-      <Stack.Screen name="setting" options={{ animation: 'none' }} />
+    // 最外層包一個 View
+    <View style={{ flex: 1 }}>
       
-      {/* 🌟 針對有叉叉的頁面：設定從下面上來 */}
+      {/* 🌟 3. 底層：你的正式 App 畫面 (讓它在後面先準備好) */}
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: '#F8F8FC' },
+          animation: 'slide_from_right', 
+        }}
+      >
+        {/* 🌟 加上極短的淡入淡出動畫，取代原本的生硬切換 */}
       <Stack.Screen 
-        name="addlog" 
-        options={{ presentation: 'modal', animation: 'slide_from_bottom' }} 
+        name="index" 
+        options={{ animation: 'fade', animationDuration: 150 }} 
       />
+      <Stack.Screen 
+        name="map" 
+        options={{ animation: 'fade', animationDuration: 150 }} 
+      />
+      <Stack.Screen 
+        name="setting" 
+        options={{ animation: 'fade', animationDuration: 150 }} 
+      />
+        <Stack.Screen 
+          name="addlog" 
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }} 
+        />
+      </Stack>
 
-      {/* 💡 備註：logbook 如果你點日期要滑入，這裡就不要設定 animation: 'none' */}
-    </Stack>
+      {/* 🌟 4. 上層：改成 Animated.View，並且套用 opacity 動畫 */}
+      {!isSplashUnmounted && (
+        <Animated.View 
+          style={[
+            styles.splashContainer, 
+            { opacity: fadeAnim } // 綁定剛剛設定的透明度變數
+          ]}
+        >
+          <StatusBar hidden={true} />
+          <Image 
+            source={require('../assets/icon.png')} 
+            style={styles.splashImage} 
+            resizeMode="contain" 
+          />
+        </Animated.View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  splashContainer: { flex: 1, backgroundColor: '#F8F8FC', justifyContent: 'center', alignItems: 'center' },
+  // 🌟 5. 加入 absoluteFillObject，讓啟動畫面變成「絕對定位」蓋滿全螢幕
+  splashContainer: { 
+    ...StyleSheet.absoluteFillObject, 
+    backgroundColor: '#F8F8FC', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    zIndex: 999, // 確保它永遠疊在最上面
+  },
   splashImage: { width: 160, height: 160, marginBottom: 20 },
 });

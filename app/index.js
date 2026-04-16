@@ -42,12 +42,14 @@ export default function HomeScreen() {
   const [calendarDates, setCalendarDates] = useState([]);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   
-  const [logs, setLogs] = useState([]);
   const [randomLog, setRandomLog] = useState(null); 
+
+ const [logs, setLogs] = useState([]);
+  // 🌟 1. 將原本的 randomLog 改成陣列，用來裝 3 個回顧
+  const [reviewLogs, setReviewLogs] = useState([]); 
   
   const yearScrollRef = useRef(null);
   const monthScrollRef = useRef(null);
-
   const realToday = new Date();
 
   useFocusEffect(
@@ -61,10 +63,11 @@ export default function HomeScreen() {
             
             const logsWithImages = parsedLogs.filter(log => log.imageUrl);
             if (logsWithImages.length > 0) {
-              const randomIndex = Math.floor(Math.random() * logsWithImages.length);
-              setRandomLog(logsWithImages[randomIndex]);
+              // 🌟 2. 將有照片的紀錄隨機打亂，然後取前 3 筆
+              const shuffled = [...logsWithImages].sort(() => 0.5 - Math.random());
+              setReviewLogs(shuffled.slice(0, 3));
             } else {
-              setRandomLog(null);
+              setReviewLogs([]);
             }
           }
         } catch (error) {
@@ -216,57 +219,37 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.reviewSection}>
-          <Text style={styles.sectionTitle}>回顧</Text>
+          <Text style={[styles.sectionTitle, { paddingHorizontal: 25 }]}>回顧</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reviewScrollContent}>
-            {randomLog ? (
-              <TouchableOpacity 
-                style={styles.reviewCard}
-                onPress={() => router.push({ pathname: '/log', params: { id: randomLog.id } })}
-              >
-                <Image source={{ uri: randomLog.imageUrl }} style={styles.reviewImage} />
-                <View style={styles.reviewOverlay}>
-                  <View style={styles.reviewStarBadge}>
-                     <Ionicons name="star-outline" size={14} color={colors.white} />
+            
+            {/* 🌟 修改 4：用 map 自動把陣列裡的 3 個回顧渲染出來 */}
+            {reviewLogs.length > 0 ? (
+              reviewLogs.map((log, index) => (
+                <TouchableOpacity 
+                  key={index}
+                  style={styles.reviewCard}
+                  onPress={() => router.push({ pathname: '/log', params: { id: log.id } })}
+                >
+                  <Image source={{ uri: log.imageUrl }} style={styles.reviewImage} />
+                  <View style={styles.reviewOverlay}>
+                    <View style={styles.reviewStarBadge}>
+                       <Ionicons name="star-outline" size={14} color={colors.white} />
+                    </View>
+                    <View style={styles.reviewDateBadge}>
+                      <Text style={styles.reviewDateMonth}>{new Date(log.date).getMonth() + 1}月</Text>
+                      <Text style={styles.reviewDateDay}>{String(new Date(log.date).getDate()).padStart(2, '0')}</Text>
+                    </View>
+                    <View style={styles.reviewLocationContainer}>
+                       <Ionicons name="location-outline" size={12} color={colors.white} />
+                       <Text style={styles.reviewLocationText} numberOfLines={1}>{log.location || '秘密基地'}</Text>
+                    </View>
                   </View>
-                  <View style={styles.reviewDateBadge}>
-                    <Text style={styles.reviewDateMonth}>{new Date(randomLog.date).getMonth() + 1}月</Text>
-                    <Text style={styles.reviewDateDay}>{String(new Date(randomLog.date).getDate()).padStart(2, '0')}</Text>
-                  </View>
-                  <View style={styles.reviewLocationContainer}>
-                     <Ionicons name="location-outline" size={12} color={colors.white} />
-                     <Text style={styles.reviewLocationText} numberOfLines={1}>{randomLog.location || '秘密基地'}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              ))
             ) : (
                <View style={styles.emptyReviewCard}>
                   <Text style={{color: colors.grayText}}>還沒有可以回顧的照片喔☕️</Text>
                </View>
-            )}
-            
-            {randomLog && logs.filter(l => l.imageUrl && l.id !== randomLog.id).length > 0 && (
-              <TouchableOpacity 
-                style={styles.reviewCard}
-                onPress={() => {
-                   const otherLogs = logs.filter(l => l.imageUrl && l.id !== randomLog.id);
-                   router.push({ pathname: '/log', params: { id: otherLogs[0].id } })
-                }}
-              >
-                <Image source={{ uri: logs.filter(l => l.imageUrl && l.id !== randomLog.id)[0].imageUrl }} style={styles.reviewImage} />
-                <View style={styles.reviewOverlay}>
-                  <View style={styles.reviewStarBadge}>
-                     <Ionicons name="star-outline" size={14} color={colors.white} />
-                  </View>
-                  <View style={styles.reviewDateBadge}>
-                    <Text style={styles.reviewDateMonth}>{new Date(logs.filter(l => l.imageUrl && l.id !== randomLog.id)[0].date).getMonth() + 1}月</Text>
-                    <Text style={styles.reviewDateDay}>{String(new Date(logs.filter(l => l.imageUrl && l.id !== randomLog.id)[0].date).getDate()).padStart(2, '0')}</Text>
-                  </View>
-                  <View style={styles.reviewLocationContainer}>
-                     <Ionicons name="location-outline" size={12} color={colors.white} />
-                     <Text style={styles.reviewLocationText} numberOfLines={1}>{logs.filter(l => l.imageUrl && l.id !== randomLog.id)[0].location || '秘密基地'}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
             )}
           </ScrollView>
         </View>
@@ -387,23 +370,23 @@ const styles = StyleSheet.create({
   
   logIconContainer: { position: 'absolute', bottom: 2, right: 8 },
   
-  reviewSection: { paddingLeft: 25, marginBottom: 20 },
-  reviewScrollContent: { paddingRight: 25, marginTop: 15 },
-  // 🌟 修改 3：寬度從 150 微調為 165
-  reviewCard: { width: 165, height: 180, borderRadius: 15, overflow: 'hidden', marginRight: 15, backgroundColor: colors.white },
-  reviewImage: { width: '100%', height: '100%' },
+  reviewSection: { marginBottom: 20 }, 
+  // 🌟 修改：將左側推擠移到這裡，並讓右側也留空間
+  reviewScrollContent: { paddingLeft: 25, paddingRight: 25, marginTop: 15 }, 
+  
+  // 🌟 修改：卡片改窄一點 (165 -> 140)，比例更漂亮，一次能顯示更多
+  reviewCard: { width: 250, height: 200, borderRadius: 15, overflow: 'hidden', marginRight: 15, backgroundColor: colors.white },  reviewImage: { width: '100%', height: '100%' },
   reviewOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'space-between', padding: 10, backgroundColor: 'rgba(0,0,0,0.1)' },
-  reviewDateBadge: { backgroundColor: colors.white, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start', alignItems: 'center' },
-  reviewDateMonth: { fontSize: 10, fontWeight: 'bold', color: colors.text },
-  reviewDateDay: { fontSize: 16, fontWeight: '900', color: colors.text, marginTop: -2 },
+  reviewDateBadge: { width: 40, height: 50, backgroundColor: colors.white, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start', alignItems: 'center' },
+  reviewDateMonth: { fontSize: 14, fontWeight: 'bold', color: colors.text, },
+  reviewDateDay: { fontSize: 20, fontWeight: '900', color: colors.text,  },
   
   reviewStarBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: 'transparent' },
   
   reviewLocationContainer: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingRight: 10 },
   reviewLocationText: { color: colors.white, fontSize: 10, fontWeight: 'bold', marginLeft: 2, flex: 1 },
   // 🌟 修改 3：空卡片寬度也對齊 165
-  emptyReviewCard: { width: 165, height: 180, borderRadius: 15, backgroundColor: colors.secondary, justifyContent: 'center', alignItems: 'center' },
-
+  emptyReviewCard: { width: 140, height: 180, borderRadius: 15, backgroundColor: colors.secondary, justifyContent: 'center', alignItems: 'center' },
   tabBarWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'transparent' },
   tabBar: { flexDirection: 'row', height: 85, backgroundColor: colors.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: 0.05, shadowRadius: 10, paddingHorizontal: 15 },
   tabItem: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 15 },
